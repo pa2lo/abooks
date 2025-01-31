@@ -102,7 +102,6 @@
 	]
 
 	function forceRefresh() {
-		console.log('force refresh')
 		window.location.reload(true)
 	}
 </script>
