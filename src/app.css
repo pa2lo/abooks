@@ -428,8 +428,8 @@ main {
 	z-index: 3;
 	background: var(--background);
 	background-color: var(--lighter);
-	transform: translateX(100%);
-	transition: transform .15s;
+	transform: translateY(100%);
+	transition: transform .25s;
 	isolation: isolate;
 	overflow: auto;
 }
@@ -445,14 +445,10 @@ main {
 	min-height: 100%;
 }
 
-.audio-player:target {
-	transform: translateX(0);
-}
-
 .audio-player-thumb-cont {
 	aspect-ratio: 1;
-	width: min(90%, 40svh);
-	margin: 0 auto auto;
+	width: min(95%, 45svh);
+	margin: 0 auto;
 }
 
 .audio-player-thumb {
@@ -981,6 +977,12 @@ body:has(.modal) {
 .settings-group-color.isSelected {
 	border-color: var(--accent);
 }
+.settings-note {
+	font-size: 0.875em;
+	margin-top: 0.4375rem;
+	opacity: .7;
+	line-height: 1.25;
+}
 
 .hotkey-key {
 	height: 1.25rem;
@@ -1039,6 +1041,25 @@ body:has(.modal) {
 		top: auto;
 		bottom: calc(100% - .25rem);
 	}
+
+	.audio-player.moveDown {
+		animation: moveDown .25s;
+	}
+	.audio-player:target {
+		transform: translateY(var(--offY, 0px));
+		animation: moveup .25s;
+	}
+	.audio-player.movingDown {
+		transition: none;
+	}
+	@keyframes moveDown {
+		from {transform: translateY(var(--offY));}
+		to {transform: translateY(100%);}
+	}
+	@keyframes moveup {
+		from {transform: translateY(100%);}
+		to {transform: translateY(0%);}
+	}
 }
 
 @media screen and (min-width: 48rem) {
@@ -1054,6 +1075,7 @@ body:has(.modal) {
 		transition: none;
 		border-top: 1px solid var(--border);
 		overflow: visible;
+		animation: none;
 	}
 
 	.audio-player-inner {

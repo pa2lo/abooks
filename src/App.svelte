@@ -3,7 +3,7 @@
 	import { scale } from 'svelte/transition'
 	import { AudiobookDB } from './db'
 	import { addBook, deleteBook } from './library'
-	import { db, library, currentBook, isPlaying, isLoading, addingBook, permissionsGranted, librarySort, showBookInfo, showFileList, showBookmarks, showToast } from './store'
+	import { db, library, currentBook, isPlaying, isLoading, addingBook, librarySort, showBookInfo, showFileList, showBookmarks, showToast } from './store'
 	import { secondsToHMS, selfFocus, isiOS, isSafari, isStandalone, saveLSSetting } from './helpers'
 
 	import AudioPlayer from './AudioPlayer.svelte'
@@ -57,12 +57,13 @@
 	})
 
 	let deletingBookIDs = []
-	async function deleteBookHelper(id, e = null) {
-		deletingBookIDs = [...deletingBookIDs, id]
-		if (window.location.hash == '#player') history.back()
-		if ($currentBook?.id == id) player.destroyBook()
-		deleteBook(e, id, () => {
-			deletingBookIDs = deletingBookIDs.filter(i => i != id)
+	async function deleteBookHelper(book, e = null) {
+		deleteBook(e, book, () => {
+			deletingBookIDs = [...deletingBookIDs, book.id]
+			if (window.location.hash == '#player') history.back()
+			if ($currentBook?.id == book.id) player.destroyBook()
+		}, () => {
+			deletingBookIDs = deletingBookIDs.filter(i => i != book.id)
 		})
 	}
 
@@ -161,7 +162,7 @@
 							<DdButton title="Book info" icon="info" on:click={() => showBookInfo(book)} />
 							<DdButton title="File list" icon="list" on:click={() => showFileList(book)} />
 							<DdButton title="Bookmarks" icon="bookmarks" disabled={!book.bookmarks.length} on:click={() => showBookmarks(book)} />
-							<DdButton title="Delete book" icon="x" on:click={(e) => deleteBookHelper(book.id, e)} />
+							<DdButton title="Delete book" icon="x" on:click={(e) => deleteBookHelper(book, e)} />
 						</div>
 					</div>
 					{#if deletingBookIDs.includes(book.id)}
@@ -185,7 +186,7 @@
 </main>
 <AudioPlayer bind:this={player} on:addBook={addBook} on:bookPlayed={() => $librarySort == 'recentlyPlayed' && sortLibrary()} />
 <AppHotkeys bind:showHotkeys />
-<BookInfo on:deleteBook={(e) => deleteBookHelper(e.detail.id)} on:setBook={(e) => player.setBook(e.detail)} />
+<BookInfo on:deleteBook={(e) => deleteBookHelper(e.detail)} on:setBook={(e) => player.setBook(e.detail)} />
 <FileList on:seekTo={(e) => player.seekToPosition(e.detail)} />
 <BookmarkList on:seekTo={(e) => player.seekToPosition(e.detail)} />
 <AddBookmark />

@@ -1,5 +1,6 @@
 import { get } from 'svelte/store'
-import { db, addingBook, library, showToast } from './store'
+import { db, addingBook, library, showToast, appFSMode } from './store'
+import { getOPFS, getDir, saveFile } from './helpers'
 import * as mm from 'music-metadata'
 
 const supportedFormats = ['audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/ogg', 'audio/x-m4a']
@@ -27,17 +28,10 @@ async function checkStoragePersistance() {
 	}
 }
 
-async function getLegacyFile(file, isSafari) {
-	return isSafari ? {
-		blob: await file.arrayBuffer(),
-		type: file.type
-	} : file
-}
-
 async function processAddBook(files, legacy, dirName, dirHandle) {
 	const bookId = crypto.randomUUID()
 
-	console.log(files)
+	console.log(`adding book from dir ${dirName} with ${files.length} files`)
 
 	if (!files.length) return alert('No files in folder')
 
@@ -46,11 +40,22 @@ async function processAddBook(files, legacy, dirName, dirHandle) {
 	const firstFile = legacy ? sortedFiles[0] : sortedFiles[0].file
 	const baseMetadata = await extractMetadata(firstFile)
 
-	const isSafari = legacy && sortedFiles[0]?.bytes ? true : false
+	if (legacy) await getDir(await getOPFS(), bookId, true)
+
+	const bookTitle = baseMetadata.artist && baseMetadata.album ? `${baseMetadata.artist} - ${baseMetadata.album}` : dirName
+
+	let shouldContinue = true
+	if (get(library).some(b => b.title == bookTitle)) {
+		shouldContinue = false
+		if (window.confirm('Book with this name is already in your library. Would you like to add book anyway?')) shouldContinue = true
+		else shouldContinue = false
+	}
+
+	if (!shouldContinue) return addingBook.set(false)
 
 	const book = {
 		id: bookId,
-		title: baseMetadata.artist && baseMetadata.album ? `${baseMetadata.artist} - ${baseMetadata.album}` : dirName,
+		title: bookTitle,
 		addedDate: Date.now(),
 		lastPlayed: null,
 		completed: null,
@@ -81,14 +86,13 @@ async function processAddBook(files, legacy, dirName, dirHandle) {
 		volume: 1,
 		eq: 'off',
 		legacy: legacy,
-		isSafari: isSafari,
 		files: 0,
-		bookmarks: []
+		bookmarks: [],
+		files: []
 	}
 
 	let totalDuration = 0
 	let totalSize = 0
-	let bookFiles = []
 
 	for (const [index, file] of sortedFiles.entries()) {
 		let currentMetadata = await extractMetadata(legacy ? file : file.file)
@@ -96,12 +100,10 @@ async function processAddBook(files, legacy, dirName, dirHandle) {
 		totalDuration += currentMetadata.duration || 0
 		if (legacy) totalSize += file.size
 
-		bookFiles.push({
-			id: crypto.randomUUID(),
+		book.files.push({
 			index: index,
-			bookId: bookId,
 			name: legacy ? file.name : file.file.name,
-			file: legacy ? await getLegacyFile(file, isSafari) : file.handle,
+			file: legacy ? null : file.handle,
 			duration: currentMetadata.duration || 0,
 			title: currentMetadata?.title || null
 		})
@@ -113,7 +115,6 @@ async function processAddBook(files, legacy, dirName, dirHandle) {
 	}
 
 	book.duration = totalDuration
-	book.files = bookFiles.length
 
 	// check available space - 50MB after upload
 	if (legacy) {
@@ -124,13 +125,21 @@ async function processAddBook(files, legacy, dirName, dirHandle) {
 			addingBook.set(false)
 			return showToast('No enough space. Delete some old books first.', 'warning')
 		}
+
+		try {
+			await Promise.all(sortedFiles.map(async (file) => {
+				let fileName = legacy ? file.name : file.file.name
+				let fileContent = await file.arrayBuffer()
+				return saveFile(bookId, fileName, fileContent)
+			}))
+		} catch (error) {
+			console.log(error)
+		}
 	}
 
 	// save book
 	await get(db).addBook(book)
-	for (const file of bookFiles) {
-		await get(db).addAudioFile(file)
-	}
+
 	library.update(l => [book, ...l])
 
 	addingBook.set(false)
@@ -146,7 +155,7 @@ export async function addBook() {
 	try {
 		const bookId = crypto.randomUUID()
 
-		if ('showDirectoryPicker' in window) {
+		if ('showDirectoryPicker' in window && get(appFSMode) == 'fsapi') {
 			const handle = await window.showDirectoryPicker({
 				mode: 'read',
 				startIn: 'music'
@@ -184,13 +193,21 @@ export async function addBook() {
 	}
 }
 
-export async function deleteBook(e, id, callback) {
+export async function deleteBook(e, book, onStart, onEnd) {
 	if (e && e.target?.closest('button')) e.target.closest('button').blur()
-	if (window.confirm(`Are you sure you want to delete book ${get(library).find(b => b.id == id)?.title}?`)) {
+	if (window.confirm(`Are you sure you want to delete book ${get(library).find(b => b.id == book.id)?.title}?`)) {
 		try {
-			await get(db).deleteBook(id)
-			library.update(lib => lib.filter(b => b.id != id))
-			if (callback) callback()
+			if (onStart) onStart()
+
+			if (book.legacy) {
+				const opfs = await getOPFS()
+				await opfs.removeEntry(book.id, { recursive: true })
+			}
+
+			await get(db).deleteBook(book.id)
+			library.update(lib => lib.filter(b => b.id != book.id))
+
+			if (onEnd) onEnd()
 			showToast('Book deleted', 'success')
 		} catch (error) {
 			console.error('Error deleting book:', error)
@@ -302,4 +319,30 @@ export async function updateBook(book, param, val) {
 		})
 	}
 	await get(db)?.updateBook(book)
+}
+
+window.abShowAllFiles = async function() {
+	async function listAllFiles(dirHandle, path = "") {
+		for await (const [name, handle] of dirHandle.entries()) {
+			const fullPath = `${path}/${name}`
+			console.log(`Name: ${fullPath}, Type: ${handle.kind}`)
+
+			if (handle.kind === "directory") {
+				await listAllFiles(handle, fullPath)
+			}
+		}
+	}
+
+	(async () => {
+		const root = await navigator.storage.getDirectory()
+		await listAllFiles(root)
+	})()
+}
+
+window.abClearStorage = async function() {
+	const opfs = await getOPFS()
+	for await (const [name, handle] of opfs.entries()) {
+		console.log(`removing ${name}`)
+		await opfs.removeEntry(name, { recursive: true })
+	}
 }

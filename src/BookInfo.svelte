@@ -76,6 +76,7 @@
 		{#if $bookInfoData.quality.sampleRate}
 			<InfoLine title="Sample rate" value={`${parseFloat($bookInfoData.quality.sampleRate / 1000)} kHz`} />
 		{/if}
+		<InfoLine title="Storage" value={$bookInfoData.legacy ? 'App memory' : 'Device storage'} />
 	</div>
 	<div class="book-modal-buttons line flex ai-c">
 		<button class="button button-light" on:click={() => showFileList($bookInfoData)}>

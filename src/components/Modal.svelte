@@ -30,11 +30,7 @@
 		if (lastFocusedEl && document.contains(lastFocusedEl) && !lastFocusedEl.closest('.dd-cont')) lastFocusedEl.focus()
 	}
 
-	let start = {
-		x: null,
-		y: null,
-		id: null
-	}
+	let start = {}
 	let offY = 0
 	let isMoving = false
 	function onTouchStart(e) {
@@ -45,22 +41,19 @@
 
 		start = {
 			x: e.changedTouches[0]?.clientX,
-			y: e.changedTouches[0]?.clientY,
-			id: e.changedTouches[0]?.identifier
+			y: e.changedTouches[0]?.clientY
 		}
 
 		addDomEvents()
 	}
 	function addDomEvents() {
 		isMoving = true
-
 		document.addEventListener('touchmove', onTouchMove, {passive: true})
 		document.addEventListener('touchend', onTouchEnd, {passive: true})
 	}
 	function removeDomEvents() {
 		isMoving = false
 		offY = 0
-
 		document.removeEventListener('touchmove', onTouchMove)
 		document.removeEventListener('touchend', onTouchEnd)
 	}
@@ -74,7 +67,7 @@
 			absY = Math.abs(diffY)
 
 		if (diffY < -5) removeDomEvents()
-		else if (absY > absX) offY = Math.max(0, diffY - 30)
+		else if (absY > absX) offY = Math.max(0, diffY - 15)
 	}
 	function onTouchEnd(e) {
 		if (isMoving && offY > 100) closeModal()

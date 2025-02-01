@@ -72,3 +72,47 @@ export function saveLSSetting(key, def, reference) {
 export const isiOS = /iPad|iPhone|iPod/.test(navigator?.platform || navigator?.userAgentData?.platform) || (navigator?.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
 export const isStandalone = window.matchMedia('(display-mode: standalone)').matches
 export const isSafari = /Apple/i.test(navigator.vendor) && /Safari/i.test(navigator.userAgent)
+
+// Origin private file system
+export async function getOPFS() {
+	return await navigator.storage.getDirectory()
+}
+
+export async function getDir(opfs, id, create = false) {
+	return await opfs.getDirectoryHandle(id, {
+		create: create
+	})
+}
+
+export async function getFile(dirHandler, id, create = false) {
+	return await dirHandler.getFileHandle(id, {
+		create: create,
+	})
+}
+
+export async function saveFile(bookId, id, file) {
+	return new Promise((resolve, reject) => {
+		const worker = new Worker('fsworker.js')
+		worker.onmessage = (e) => {
+			console.log(e)
+			worker.terminate()
+			resolve(true)
+		}
+
+		worker.onerror = (e) => {
+			console.log(e)
+			worker.terminate()
+			reject(false)
+		}
+
+		worker.postMessage({
+			bookId, id, file
+		})
+	})
+
+	/* does not work in Safari
+	const writable = await fileHandler.createWritable()
+	await writable.write(file)
+    await writable.close()
+	return true */
+}

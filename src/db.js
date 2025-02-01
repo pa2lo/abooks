@@ -22,12 +22,6 @@ export class AudiobookDB {
 					const bookStore = db.createObjectStore('books', { keyPath: 'id' });
 					bookStore.createIndex('title', 'title', { unique: false });
 				}
-
-				// Store for book files
-				if (!db.objectStoreNames.contains('audioFiles')) {
-					const fileStore = db.createObjectStore('audioFiles', { keyPath: 'id' });
-					fileStore.createIndex('bookId', 'bookId', { unique: false });
-				}
 			};
 		});
 	}
@@ -43,13 +37,13 @@ export class AudiobookDB {
 		});
 	}
 
-	async addAudioFile(fileData) {
+	async getBook(id) {
 		return new Promise((resolve, reject) => {
-			const transaction = this.db.transaction(['audioFiles'], 'readwrite');
-			const store = transaction.objectStore('audioFiles');
-			const request = store.add(fileData);
+			const transaction = this.db.transaction(['books'], 'readonly');
+			const store = transaction.objectStore('books');
+			const request = store.get(id);
 
-			request.onsuccess = () => resolve(fileData);
+			request.onsuccess = () => resolve(request.result);
 			request.onerror = () => reject(request.error);
 		});
 	}
@@ -66,17 +60,6 @@ export class AudiobookDB {
 		})
 	}
 
-	async getBook(id) {
-		return new Promise((resolve, reject) => {
-			const transaction = this.db.transaction(['books'], 'readonly');
-			const store = transaction.objectStore('books');
-			const request = store.get(id);
-
-			request.onsuccess = () => resolve(request.result);
-			request.onerror = () => reject(request.error);
-		});
-	}
-
 	async getAllBooks() {
 		return new Promise((resolve, reject) => {
 			const transaction = this.db.transaction(['books'], 'readonly');
@@ -88,21 +71,8 @@ export class AudiobookDB {
 		});
 	}
 
-	async getBookFiles(bookId) {
-		return new Promise((resolve, reject) => {
-			const transaction = this.db.transaction(['audioFiles'], 'readonly');
-			const store = transaction.objectStore('audioFiles');
-			const index = store.index('bookId');
-			const request = index.getAll(bookId);
-
-			request.onsuccess = () => resolve(request.result.sort((a, b) => a.index - b.index));
-			request.onerror = () => reject(request.error);
-		});
-	}
-
 	async deleteBook(bookId) {
 		try {
-			await this.deleteBookFiles(bookId);
 			return new Promise((resolve, reject) => {
 				const transaction = this.db.transaction(['books'], 'readwrite');
 				const store = transaction.objectStore('books');
@@ -114,36 +84,5 @@ export class AudiobookDB {
 		} catch (error) {
 			console.error(error)
 		}
-	}
-
-	async deleteBookFiles(bookId) {
-		return new Promise((resolve, reject) => {
-			const transaction = this.db.transaction(['audioFiles'], 'readwrite');
-			const store = transaction.objectStore('audioFiles');
-			const index = store.index('bookId');
-			const request = index.getAllKeys(bookId);
-
-			request.onsuccess = async () => {
-				const keys = request.result;
-
-				if (keys.length === 0) {
-					return resolve(); // No files to delete
-				}
-
-				try {
-					for (const key of keys) {
-						await new Promise((resolve, reject) => {
-							const deleteRequest = store.delete(key);
-							deleteRequest.onsuccess = () => resolve();
-							deleteRequest.onerror = () => reject(deleteRequest.error);
-						});
-					}
-					resolve();
-				} catch (error) {
-					reject(error);
-				}
-			};
-			request.onerror = () => reject(request.error);
-		})
 	}
 }

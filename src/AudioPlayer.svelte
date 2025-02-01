@@ -2,19 +2,20 @@
 	import { onMount, onDestroy, createEventDispatcher } from 'svelte'
 	import { isPlaying, isLoading, currentBook, db, library, showBookInfo, showFileList, showSleepTimer, sleepActive, appSeek, appMediaKeys, appTimeDisplay, switchTimeDisplay, showBookmarks, showAddBookmark, showToast } from './store'
 	import { updateBook } from './library'
-	import { secondsToHMS, selfFocus, removeFileExtension, isiOS } from './helpers'
+	import { secondsToHMS, selfFocus, removeFileExtension, isiOS, getOPFS, getDir, getFile } from './helpers'
 
 	import Icon from './components/Icon.svelte'
 	import IcoButton from './components/IcoButton.svelte'
 	import DdButton from './components/DdButton.svelte'
 
 	let audioElement
-	let bookFiles
 	let bookFilesMarkers = []
 	let currentFile
 	let currentFileIndex
 	let fileLoaded = false
 	let currentBookGranted = false
+	let opfs
+	let bookDir
 
 	const dispatch = createEventDispatcher()
 
@@ -34,10 +35,10 @@
 			seekFW()
 		}],
 		['previoustrack', async () => {
-			$currentBook.files > 1 && $appMediaKeys == 'track' ? skipToPrevTrack() : seekBW()
+			$currentBook.files.length > 1 && $appMediaKeys == 'track' ? skipToPrevTrack() : seekBW()
 		}],
 		['nexttrack', async () => {
-			$currentBook.files > 1 && $appMediaKeys == 'track' ? skipToNextTrack() : seekFW()
+			$currentBook.files.length > 1 && $appMediaKeys == 'track' ? skipToNextTrack() : seekFW()
 		}]
 	]
 
@@ -119,19 +120,26 @@
 	// file operations
 	async function loadBookFiles() {
 		$isLoading = true
+
+		if ($currentBook.legacy) {
+			if (!opfs) opfs = await getOPFS()
+			bookDir = await getDir(opfs, $currentBook.id)
+		}
+
 		bookFilesMarkers = []
-		bookFiles = await $db.getBookFiles($currentBook.id)
-		if (bookFiles.length > 1) bookFilesMarkers = bookFiles.reduce((acc, f, i) => {
+
+		if ($currentBook.files.length > 1) bookFilesMarkers = $currentBook.files.reduce((acc, f, i) => {
 			if (i == 0) acc.push(f.duration)
-			else if (i+1 == $currentBook.files) return acc
+			else if (i+1 == $currentBook.files.length) return acc
 			else acc.push(acc.at(-1) + f.duration)
 			return acc
 		}, [])
+
 		$isLoading = false
 	}
 	async function setCurrentFileIndex(index) {
 		currentFileIndex = index
-		currentFile = bookFiles[index]
+		currentFile = $currentBook.files[index]
 	}
 
 	async function checkPermissions(fileHandle) {
@@ -140,8 +148,9 @@
 		return false
 	}
 
-	function getLegacyFile() {
-		return $currentBook.isSafari ? new Blob([currentFile.file.blob], { type: currentFile.file.type }) : currentFile.file
+	async function getLegacyFile() {
+		let file = await getFile(bookDir, currentFile.name)
+		return await file.getFile()
 	}
 
 	async function loadFile(index, setPosition) {
@@ -159,7 +168,7 @@
 		try {
 			if (!fileLoaded) fileLoaded = true
 
-			const file = $currentBook.legacy ? getLegacyFile() : await currentFile.file.getFile()
+			const file = $currentBook.legacy ? await getLegacyFile() : await currentFile.file.getFile()
 			audioElement.src = URL.createObjectURL(file)
 
 			if (setPosition || setPosition === 0) $currentBook.currentPosition.position = setPosition
@@ -197,7 +206,7 @@
 				if (e.code == 'KeyN') skipToNextTrack()
 				if (e.code == 'KeyI') showBookInfo($currentBook)
 				if (e.code == 'KeyB') showAddBookmark($currentBook.absolutePosition)
-				if (e.code == 'KeyF' && $currentBook.files > 1) showFileList($currentBook, bookFiles)
+				if (e.code == 'KeyF' && $currentBook.files.length > 1) showFileList($currentBook)
 				if (e.code == 'KeyD' && $currentBook.bookmarks?.length) showBookmarks($currentBook)
 			}
 			if (e.code == 'KeyS') showSleepTimer()
@@ -223,6 +232,7 @@
 		}
 		document.documentElement.addEventListener('keydown', hotkeysDownHandler)
 		document.documentElement.addEventListener('keyup', hotkeysUpHandler)
+		window.addEventListener('hashchange', togglePlayerClass)
 	})
 	onDestroy(() => {
 		if (audioElement?.src) {
@@ -230,13 +240,15 @@
 			URL.revokeObjectURL(audioElement.src)
 		}
 		if (eqContext) destroyEQ()
+		document.documentElement.removeEventListener('keydown', hotkeysDownHandler)
+		document.documentElement.removeEventListener('keyup', hotkeysUpHandler)
 	})
 
 	// position helpers
 	function getAbsolutePosition() {
 		let position = 0
 		for (let i = 0; i < currentFileIndex; i++) {
-			position += bookFiles[i].duration
+			position += $currentBook.files[i].duration
 		}
 		position += audioElement.currentTime
 		return position
@@ -245,8 +257,8 @@
 	function findPartForPosition(absolutePosition) {
 		let accumulatedDuration = 0
 
-		for (let i = 0; i < $currentBook.files; i++) {
-			const partDuration = bookFiles[i].duration
+		for (let i = 0; i < $currentBook.files.length; i++) {
+			const partDuration = $currentBook.files[i].duration
 			if (absolutePosition < accumulatedDuration + partDuration) {
 				return {
 					partIndex: i,
@@ -273,7 +285,7 @@
 
 	async function skipToNextTrack() {
 		if ($isLoading) return
-		if ($currentBook.files == currentFileIndex+1) return
+		if ($currentBook.files.length == currentFileIndex+1) return
 
 		await playFile(currentFileIndex+1)
 	}
@@ -403,7 +415,7 @@
 	async function updateProgress() {
 		if (!$currentBook || !audioElement || audioElement.paused) return
 		$currentBook.currentPosition = {
-			fileIndex: Math.max(bookFiles.indexOf(currentFile), 0),
+			fileIndex: Math.max($currentBook.files.indexOf(currentFile), 0),
 			position: audioElement.currentTime,
 		}
 		$currentBook.absolutePosition = getAbsolutePosition()
@@ -412,8 +424,8 @@
 	}
 
 	async function handleEnded() {
-		const nextIndex = bookFiles.indexOf(currentFile) + 1
-		if (nextIndex < $currentBook.files) {
+		const nextIndex = $currentBook.files.indexOf(currentFile) + 1
+		if (nextIndex < $currentBook.files.length) {
 			let newFileLoaded = await loadFile(nextIndex, 0)
 			if (newFileLoaded) await audioElement.play()
 		} else {
@@ -474,6 +486,61 @@
       ? `-${secondsToHMS($currentBook.duration - $currentBook.absolutePosition)}`
       : secondsToHMS($currentBook.duration)
     : ""
+
+	// touch actions
+	let playerEl
+	let start = {}
+	let offY = 0
+	let isMoving = false
+	let playerClass = ''
+	function togglePlayerClass() {
+		playerClass = window.location.hash == '#player' ? 'moveUp' : 'moveDown'
+	}
+	function onAnimationEnd() {
+		offY = 0
+	}
+	function ouTouchStart(e) {
+		if (e.touches.length > 1 || window.visualViewport.scale > 1.01 || playerEl.scrollTop > 0 || window.location.hash != '#player') {
+			if (isMoving) removeDomEvents()
+			return
+		}
+
+		start = {
+			x: e.changedTouches[0]?.clientX,
+			y: e.changedTouches[0]?.clientY
+		}
+
+		addDomEvents()
+	}
+	function addDomEvents() {
+		isMoving = true
+		document.addEventListener('touchmove', onTouchMove, {passive: true})
+		document.addEventListener('touchend', onTouchEnd, {passive: true})
+	}
+	function removeDomEvents(reset) {
+		isMoving = false
+		if (reset) offY = 0
+		document.removeEventListener('touchmove', onTouchMove)
+		document.removeEventListener('touchend', onTouchEnd)
+	}
+	function onTouchMove(e) {
+		if (window.visualViewport.scale > 1.01) return
+		const { clientX: endX, clientY: endY } = e.changedTouches[0]
+
+		const diffX = endX - start.x,
+			diffY = endY - start.y,
+			absX = Math.abs(diffX),
+			absY = Math.abs(diffY)
+
+		if (diffY < -5) removeDomEvents(true)
+		else if (absY > absX) offY = Math.max(0, diffY - 15)
+	}
+	function onTouchEnd(e) {
+		if (isMoving && offY > 100) history.back()
+		requestAnimationFrame(() => {
+			removeDomEvents(offY < 101)
+		})
+	}
 </script>
 
 {#if $currentBook}
@@ -488,7 +555,7 @@
 		<progress class="small-player-progress" max={$currentBook.duration} value={$currentBook.absolutePosition}></progress>
 	</a>
 
-	<div class="audio-player" id="player">
+	<div class="audio-player {playerClass}" id="player" bind:this={playerEl} on:touchstart={ouTouchStart} on:animationend={onAnimationEnd} class:movingDown={offY > 0} style='--offY: {offY}px;'>
 		<audio
 			bind:this={audioElement}
 			on:ended={handleEnded}
@@ -501,7 +568,7 @@
 		<div class="audio-player-inner">
 			<div class="audio-player-header rm-hide flex ai-c">
 				<IcoButton title="Back" icon="back" on:click={() => history.back()} />
-				<IcoButton title="File list" icon="list" clss="allow-space ml-a" on:click={() => showFileList($currentBook, bookFiles)} />
+				<IcoButton title="File list" icon="list" clss="allow-space ml-a" on:click={() => showFileList($currentBook)} />
 				<IcoButton title="Bookmarks" icon="bookmarks" clss="allow-space" disabled={!$currentBook.bookmarks.length} on:click={() => showBookmarks($currentBook)} />
 				<IcoButton title="Book info" icon="info" clss="allow-space" on:click={() => showBookInfo($currentBook)} />
 			</div>
@@ -521,13 +588,12 @@
 				</div>
 				<div class="audio-player-part">
 					{ currentFile?.title || removeFileExtension(currentFile?.name) }
-					{#if $currentBook.files > 1}
-						<span class="lighter audio-player-part-of">({currentFileIndex + 1} / {$currentBook.files})</span>
+					{#if $currentBook.files.length > 1}
+						<span class="lighter audio-player-part-of">({currentFileIndex + 1} / {$currentBook.files.length})</span>
 					{/if}
 				</div>
 			</div>
 
-			<!-- Player controls here -->
 			<div class="audio-player-progress">
 				<div class="audio-progress flex ai-c">
 					<div class="lighter">{ secondsToHMS($currentBook.absolutePosition) }</div>
@@ -557,13 +623,13 @@
 				</div>
 			</div>
 			<div class="audio-player-controls flex ai-c">
-				<IcoButton title="Previous track" icon="prev-track" disabled={$currentBook.files < 2} on:click={() => skipToPrevTrack()} />
+				<IcoButton title="Previous track" icon="prev-track" disabled={$currentBook.files.length < 2} on:click={() => skipToPrevTrack()} />
 				<IcoButton title="Rewind backward" icon={bwIconMap[$appSeek]} clss="bigger-button" on:click={seekBW} />
 				<button class="play-button" class:isLoading={$isLoading} on:click={togglePlay} title={$isPlaying ? 'Pause' : 'Play'}>
 					<Icon icon={$isPlaying ? 'pause' : 'play'} />
 				</button>
 				<IcoButton title="Rewind forward" icon={fwIconMap[$appSeek]} clss="bigger-button" on:click={seekFW} />
-				<IcoButton title="Next track" icon="next-track" disabled={$currentBook.files < 2 || $currentBook.files == currentFileIndex+1} on:click={() => skipToNextTrack()} />
+				<IcoButton title="Next track" icon="next-track" disabled={$currentBook.files.length < 2 || $currentBook.files.length == currentFileIndex+1} on:click={() => skipToNextTrack()} />
 			</div>
 
 			<div class="audio-player-actions flex ai-c">
@@ -597,7 +663,7 @@
 					<IcoButton title="More" icon="horizontal-dots" clss="allow-space" on:pointerdown={selfFocus} />
 					<div class="dd-menu dd-pop dd-top-right">
 						<DdButton title="Book info" icon="info" on:click={() => showBookInfo($currentBook)} />
-						<DdButton title="File list" icon="list" on:click={() => showFileList($currentBook, bookFiles)} />
+						<DdButton title="File list" icon="list" on:click={() => showFileList($currentBook)} />
 						<DdButton title="Bookmarks" icon="bookmarks" disabled={!$currentBook.bookmarks.length} on:click={() => showBookmarks($currentBook)} />
 					</div>
 				</div>

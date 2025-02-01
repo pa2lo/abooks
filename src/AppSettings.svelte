@@ -1,20 +1,34 @@
 <script>
 	import { createEventDispatcher } from "svelte"
-	import { appSeek, appMediaKeys, appTimeDisplay, switchTimeDisplay } from "./store"
+	import { appSeek, appMediaKeys, appTimeDisplay, switchTimeDisplay, appFSMode } from "./store"
 	import { saveLSSetting } from "./helpers"
 
 	import Modal from "./components/Modal.svelte"
 	import SettingField from "./components/SettingField.svelte"
+	import InfoLine from "./components/InfoLine.svelte"
 
 	let settingsModal = false
 
 	const dispatch = createEventDispatcher()
 
+	let appSize
+
 	let appScheme = localStorage.getItem('scheme') || 'auto'
 	let appColor = localStorage.getItem('color') || 'color1'
 
-	export function showSettings() {
+	export async function showSettings() {
 		settingsModal = true
+		showAppSize()
+	}
+
+	async function showAppSize() {
+		const est = await navigator.storage.estimate()
+		if (est.usageDetails) {
+			appSize = {
+				filesystem: parseFloat((est.usageDetails.fileSystem / 1024 / 1024).toFixed(1)),
+				db: parseFloat((est.usageDetails.indexedDB / 1024 / 1024).toFixed(1))
+			}
+		}
 	}
 
 	const schemeOptions = ['auto', 'dark', 'light']
@@ -43,7 +57,16 @@
 		Object.keys(colorOptions).forEach(v => document.documentElement.classList.toggle(`color-${v}`, v == appColor))
 	}
 
-	const seekOptions = [5, 15, 30]
+	const seekOptions = [{
+		title: '5s',
+		value: 5
+	}, {
+		title: '15s',
+		value: 15
+	}, {
+		title: '30s',
+		value: 30
+	}]
 	function switchSeek() {
 		saveLSSetting('seek', 15, $appSeek)
 		dispatch('updateMediaKeys')
@@ -62,6 +85,18 @@
 		title: 'Remaining',
 		value: 'remaining'
 	}]
+
+	const appFSOptions = [{
+		title: 'Device files',
+		value: 'fsapi'
+	}, {
+		title: 'App memory',
+		value: 'opfs'
+	}]
+	function switchAppFSMode() {
+		saveLSSetting('fsMode', 'fsapi', $appFSMode)
+	}
+	const hasFSOption = 'showDirectoryPicker' in window
 </script>
 
 <Modal title="Settings" on:close={() => settingsModal = false} show={settingsModal} width="narrow">
@@ -77,4 +112,20 @@
 			{/each}
 		</div>
 	</div>
+	{#if hasFSOption}
+		<SettingField label="Books storage" options={appFSOptions} bind:group={$appFSMode} on:change={switchAppFSMode}>
+			<p class="settings-note">
+				{#if $appFSMode == 'fsapi'}
+					Book files will be read from the device's storage. The app will have a smaller size but may ask for permissions more often.
+				{:else}
+					New books will be stored in apps memory. This option may cause higher app size, but app will not ask for permissions.
+				{/if}
+			</p>
+		</SettingField>
+	{/if}
+	{#if appSize}
+		<p class="lineSmall lh125">App storage usage:</p>
+		<InfoLine title="File system" value={`${appSize.filesystem}MB`} />
+		<InfoLine title="DB" value={`${appSize.db}MB`} />
+	{/if}
 </Modal>

@@ -24,4 +24,5 @@
 			</label>
 		{/each}
 	</div>
+	<slot />
 </div>
