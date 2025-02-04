@@ -4,11 +4,16 @@
 
 	import Icon from './Icon.svelte'
 
-	export let width = 'normal'
-	export let title
-	export let show
+	let {
+		width = 'normal',
+		title,
+		show,
+		onkeydown,
+		onkeyup,
+		children
+	} = $props()
 
-	let modalEl = null
+	let modalEl = $state(null)
 
 	const dispatch = createEventDispatcher()
 
@@ -16,9 +21,13 @@
 		dispatch('close')
 	}
 
+	function onSelfClick(e) {
+		if (e.target == modalEl) closeModal()
+	}
+
 	function handleKeyUp(e) {
 		if (e.key == 'Escape') closeModal()
-		else dispatch('keyup', e)
+		else if (onkeyup) onkeyup(e)
 	}
 
 	let lastFocusedEl
@@ -31,7 +40,7 @@
 	}
 
 	let start = {}
-	let offY = 0
+	let offY = $state(0)
 	let isMoving = false
 	function onTouchStart(e) {
 		if (e.touches.length > 1 || window.visualViewport.scale > 1.01 || modalEl.scrollTop > 0) {
@@ -82,15 +91,15 @@
 </script>
 
 {#if show}
-	<div transition:fade={{duration: 200}} bind:this={modalEl} on:introend={onIntroEnd} on:outroend={onOutroEnd} on:click|self={closeModal} on:keydown on:keyup={handleKeyUp} role="button" tabindex="-1" class="modal" class:movingDown={offY > 0}>
-		<div class="modal-inner modal-{width}" on:touchstart={onTouchStart} style="transform: translateY({offY}px);">
-			<button class="modal-x transparent-button" on:click={closeModal}>
+	<div transition:fade={{duration: 200}} bind:this={modalEl} onintroend={onIntroEnd} onoutroend={onOutroEnd} onclick={onSelfClick} {onkeydown} onkeyup={handleKeyUp} role="button" tabindex="-1" class="modal" class:movingDown={offY > 0}>
+		<div class="modal-inner modal-{width}" ontouchstart={onTouchStart} style="transform: translateY({offY}px);">
+			<button class="modal-x transparent-button" onclick={closeModal}>
 				<Icon icon="x" />
 			</button>
 			{#if title}
 				<h2 class="modal-header">{ title }</h2>
 			{/if}
-			<slot />
+			{@render children?.()}
 		</div>
 	</div>
 {/if}

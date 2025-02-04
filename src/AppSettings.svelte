@@ -1,22 +1,22 @@
 <script>
 	import { createEventDispatcher } from "svelte"
-	import { appSeek, appMediaKeys, appTimeDisplay, switchTimeDisplay, appFSMode } from "./store"
+	import { abSettings } from "./store.svelte"
 	import { saveLSSetting } from "./helpers"
 
 	import Modal from "./components/Modal.svelte"
 	import SettingField from "./components/SettingField.svelte"
 	import InfoLine from "./components/InfoLine.svelte"
 
-	let settingsModal = false
+	let settingsModal = $state(false)
 
 	const dispatch = createEventDispatcher()
 
-	let appSize
+	let appSize = $state()
 
-	let appScheme = localStorage.getItem('scheme') || 'auto'
-	let appColor = localStorage.getItem('color') || 'color1'
+	let appScheme = $state(localStorage.getItem('scheme') || 'auto')
+	let appColor = $state(localStorage.getItem('color') || 'color1')
 
-	export async function showSettings() {
+	export async function show() {
 		settingsModal = true
 		showAppSize()
 	}
@@ -66,15 +66,18 @@
 	}, {
 		title: '30s',
 		value: 30
+	}, {
+		title: '60s',
+		value: 60
 	}]
 	function switchSeek() {
-		saveLSSetting('seek', 15, $appSeek)
+		saveLSSetting('seek', 15, abSettings.seek)
 		dispatch('updateMediaKeys')
 	}
 
 	const mediaKeysOptions = ['track', 'rewind']
 	function switchMediaKeys() {
-		saveLSSetting('mediaKeys', 'track', $appMediaKeys)
+		saveLSSetting('mediaKeys', 'track', abSettings.mediaKeys)
 		dispatch('updateMediaKeys')
 	}
 
@@ -94,28 +97,28 @@
 		value: 'opfs'
 	}]
 	function switchAppFSMode() {
-		saveLSSetting('fsMode', 'fsapi', $appFSMode)
+		saveLSSetting('fsMode', 'fsapi', abSettings.fsMode)
 	}
 	const hasFSOption = 'showDirectoryPicker' in window
 </script>
 
 <Modal title="Settings" on:close={() => settingsModal = false} show={settingsModal} width="narrow">
 	<SettingField label="Color scheme" options={schemeOptions} bind:group={appScheme} on:change={switchScheme} />
-	<SettingField label="Rewind time" options={seekOptions} bind:group={$appSeek} on:change={switchSeek} />
-	<SettingField label="Prev/next media keys" options={mediaKeysOptions} bind:group={$appMediaKeys} on:change={switchMediaKeys} />
-	<SettingField label="Time display" options={timeDisplayOptions} bind:group={$appTimeDisplay} on:change={switchTimeDisplay} />
+	<SettingField label="Rewind time" options={seekOptions} bind:group={abSettings.seek} on:change={switchSeek} />
+	<SettingField label="Prev/next media keys" options={mediaKeysOptions} bind:group={abSettings.mediaKeys} on:change={switchMediaKeys} />
+	<SettingField label="Time display" options={timeDisplayOptions} bind:group={abSettings.timeDisplay} on:change={abSettings.switchTimeDisplay} />
 	<div class="lineSmaller">
 		<p class="settings-group-label">App color</p>
 		<div class="settings-group-colors flex">
 			{#each Object.entries(colorOptions) as entry}
-				<button class="settings-group-color" class:isSelected={entry[0] == appColor} style="--bg: {entry[1]};" on:click={() => switchColor(entry[0])} aria-label={entry[0]}></button>
+				<button class="settings-group-color" class:isSelected={entry[0] == appColor} style="--bg: {entry[1]};" onclick={() => switchColor(entry[0])} aria-label={entry[0]}></button>
 			{/each}
 		</div>
 	</div>
 	{#if hasFSOption}
-		<SettingField label="Books storage" options={appFSOptions} bind:group={$appFSMode} on:change={switchAppFSMode}>
+		<SettingField label="Books storage" options={appFSOptions} bind:group={abSettings.fsMode} on:change={switchAppFSMode}>
 			<p class="settings-note">
-				{#if $appFSMode == 'fsapi'}
+				{#if abSettings.fsMode == 'fsapi'}
 					Book files will be read from the device's storage. The app will have a smaller size but may ask for permissions more often.
 				{:else}
 					New books will be stored in apps memory. This option may cause higher app size, but app will not ask for permissions.

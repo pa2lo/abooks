@@ -1,6 +1,6 @@
 <script>
 	import { createEventDispatcher } from "svelte"
-	import { bookInfoData, bookInfoModal, currentBook, isPlaying, showFileList, showBookmarks } from "./store"
+	import { ab, bookInfo, showFileList, showBookmarks } from "./store.svelte"
 	import { secondsToHMS, formatDate } from "./helpers"
 
 	import Modal from "./components/Modal.svelte"
@@ -10,88 +10,88 @@
 	const dispatch = createEventDispatcher()
 
 	function deleteBook() {
-		$bookInfoModal = false
-		dispatch('deleteBook', $bookInfoData)
+		bookInfo.active = false
+		dispatch('deleteBook', bookInfo.book)
 	}
 	function setBook() {
-		dispatch('setBook', $bookInfoData)
+		dispatch('setBook', bookInfo.book)
 	}
 
-	$: bookPlaying = $currentBook?.id == $bookInfoData?.id && $isPlaying
+	let bookPlaying = $derived(ab.currentBook?.id == bookInfo.book?.id && ab.isPlaying)
 </script>
 
-<Modal title="Book info" on:close={() => $bookInfoModal = false} show={$bookInfoModal}>
-	{#if $bookInfoData.metadata.cover}
-		<img class="book-modal-img line" src={$bookInfoData.metadata.cover} alt="" >
+<Modal title="Book info" on:close={() => bookInfo.active = false} show={bookInfo.active}>
+	{#if bookInfo.book.metadata.cover}
+		<img class="book-modal-img line" src={bookInfo.book.metadata.cover} alt="" >
 	{/if}
-	<h4 class="book-modal-title lineSmaller">{ $bookInfoData.title }</h4>
-	{#if $bookInfoData.metadata.description}
-		<p class="lineSmaller">{ $bookInfoData.metadata.description }</p>
+	<h4 class="book-modal-title lineSmaller">{ bookInfo.book.title }</h4>
+	{#if bookInfo.book.metadata.description}
+		<p class="lineSmaller">{ bookInfo.book.metadata.description }</p>
 	{/if}
-	{#if ['author', 'album', 'year', 'genre', 'label', 'language'].some(l => $bookInfoData.metadata[l])}
+	{#if ['author', 'album', 'year', 'genre', 'label', 'language'].some(l => bookInfo.book.metadata[l])}
 		<div class="book-modal-cont lineSmaller">
 			<h4 class="lineSmall">Info</h4>
-			{#if $bookInfoData.metadata.author}
-				<InfoLine title="Author" value={$bookInfoData.metadata.author} />
+			{#if bookInfo.book.metadata.author}
+				<InfoLine title="Author" value={bookInfo.book.metadata.author} />
 			{/if}
-			{#if $bookInfoData.metadata.album}
-				<InfoLine title="Book" value={$bookInfoData.metadata.album} />
+			{#if bookInfo.book.metadata.album}
+				<InfoLine title="Book" value={bookInfo.book.metadata.album} />
 			{/if}
-			{#if $bookInfoData.metadata.year}
-				<InfoLine title="Year" value={$bookInfoData.metadata.year} />
+			{#if bookInfo.book.metadata.year}
+				<InfoLine title="Year" value={bookInfo.book.metadata.year} />
 			{/if}
-			{#if $bookInfoData.metadata.artist && $bookInfoData.metadata.artist != $bookInfoData.metadata.author}
-				<InfoLine title="Narrator" value={$bookInfoData.metadata.artist} />
+			{#if bookInfo.book.metadata.artist && bookInfo.book.metadata.artist != bookInfo.book.metadata.author}
+				<InfoLine title="Narrator" value={bookInfo.book.metadata.artist} />
 			{/if}
-			{#if $bookInfoData.metadata.genre}
-				<InfoLine title="Genre" value={$bookInfoData.metadata.genre} />
+			{#if bookInfo.book.metadata.genre}
+				<InfoLine title="Genre" value={bookInfo.book.metadata.genre} />
 			{/if}
-			{#if $bookInfoData.metadata.label}
-				<InfoLine title="Label" value={$bookInfoData.metadata.label} />
+			{#if bookInfo.book.metadata.label}
+				<InfoLine title="Label" value={bookInfo.book.metadata.label} />
 			{/if}
-			{#if $bookInfoData.metadata.language}
-				<InfoLine title="Language" value={$bookInfoData.metadata.language} />
+			{#if bookInfo.book.metadata.language}
+				<InfoLine title="Language" value={bookInfo.book.metadata.language} />
 			{/if}
 		</div>
 	{/if}
 	<div class="book-modal-cont lineSmaller">
 		<h4 class="lineSmall">Timing</h4>
-		<InfoLine title="Total time" value={secondsToHMS($bookInfoData.duration)} />
-		<InfoLine title="Added" value={formatDate($bookInfoData.addedDate)} />
-		{#if $bookInfoData.lastPlayed}
-			<InfoLine title="Last played" value={formatDate($bookInfoData.lastPlayed)} />
+		<InfoLine title="Total time" value={secondsToHMS(bookInfo.book.duration)} />
+		<InfoLine title="Added" value={formatDate(bookInfo.book.addedDate)} />
+		{#if bookInfo.book.lastPlayed}
+			<InfoLine title="Last played" value={formatDate(bookInfo.book.lastPlayed)} />
 		{/if}
-		{#if $bookInfoData.completed}
-			<InfoLine title="Finished" value={formatDate($bookInfoData.completed)} />
+		{#if bookInfo.book.completed}
+			<InfoLine title="Finished" value={formatDate(bookInfo.book.completed)} />
 		{/if}
 	</div>
 	<div class="book-modal-cont line">
 		<h4 class="lineSmall">Quality</h4>
-		{#if $bookInfoData.quality.codec}
-			<InfoLine title="Codec" value={$bookInfoData.quality.codec} />
+		{#if bookInfo.book.quality.codec}
+			<InfoLine title="Codec" value={bookInfo.book.quality.codec} />
 		{/if}
-		{#if $bookInfoData.quality.bitrate}
-			<InfoLine title="Bitrate" value={`${parseInt($bookInfoData.quality.bitrate / 1000)} kbps`} />
+		{#if bookInfo.book.quality.bitrate}
+			<InfoLine title="Bitrate" value={`${parseInt(bookInfo.book.quality.bitrate / 1000)} kbps`} />
 		{/if}
-		{#if $bookInfoData.quality.sampleRate}
-			<InfoLine title="Sample rate" value={`${parseFloat($bookInfoData.quality.sampleRate / 1000)} kHz`} />
+		{#if bookInfo.book.quality.sampleRate}
+			<InfoLine title="Sample rate" value={`${parseFloat(bookInfo.book.quality.sampleRate / 1000)} kHz`} />
 		{/if}
-		<InfoLine title="Storage" value={$bookInfoData.legacy ? 'App memory' : 'Device storage'} />
+		<InfoLine title="Storage" value={bookInfo.book.legacy ? 'App memory' : 'Device storage'} />
 	</div>
 	<div class="book-modal-buttons line flex ai-c">
-		<button class="button button-light" on:click={() => showFileList($bookInfoData)}>
+		<button class="button button-light" onclick={() => showFileList(bookInfo.book)}>
 			<Icon icon="list" />
 			<span class="button-text">Files</span>
 		</button>
-		<button class="button button-light" disabled={!$bookInfoData.bookmarks.length} on:click={() => showBookmarks($bookInfoData)}>
+		<button class="button button-light" disabled={!bookInfo.book.bookmarks.length} onclick={() => showBookmarks(bookInfo.book)}>
 			<Icon icon="bookmarks" />
 			<span class="button-text">Bookmarks</span>
 		</button>
-		<button class="button button-light" on:click={deleteBook}>
+		<button class="button button-light" onclick={deleteBook}>
 			<Icon icon="x" />
 			<span class="button-text">Delete</span>
 		</button>
-		<button class="button" on:click={setBook}>
+		<button class="button" onclick={setBook}>
 			<Icon icon={bookPlaying ? 'pause' : 'play'} />
 			<span class="button-text">{ bookPlaying ? 'Pause' : 'Play' }</span>
 		</button>

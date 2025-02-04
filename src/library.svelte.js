@@ -1,10 +1,16 @@
-import { get } from 'svelte/store'
-import { db, addingBook, library, showToast, appFSMode } from './store'
+import { ab, abSettings, showToast } from './store.svelte'
 import { getOPFS, getDir, saveFile } from './helpers'
 import * as mm from 'music-metadata'
 
 const supportedFormats = ['audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/ogg', 'audio/x-m4a']
 let persistanceChecked = false
+
+export const library = $state({
+	books: []
+})
+export const positions = $state({
+	books: null
+})
 
 async function checkStoragePersistance() {
 	try {
@@ -45,14 +51,20 @@ async function processAddBook(files, legacy, dirName, dirHandle) {
 	const bookTitle = baseMetadata.artist && baseMetadata.album ? `${baseMetadata.artist} - ${baseMetadata.album}` : dirName
 
 	let shouldContinue = true
-	if (get(library).some(b => b.title == bookTitle)) {
+	if (library.books.some(b => b.title == bookTitle)) {
 		shouldContinue = false
 		if (window.confirm('Book with this name is already in your library. Would you like to add book anyway?')) shouldContinue = true
 		else shouldContinue = false
 	}
 
-	if (!shouldContinue) return addingBook.set(false)
+	if (!shouldContinue) return ab.addingBook = false
 
+	const position = {
+		id: bookId,
+		absolutePosition: 0,
+		fileIndex: 0,
+		filePosition: 0
+	}
 	const book = {
 		id: bookId,
 		title: bookTitle,
@@ -61,11 +73,11 @@ async function processAddBook(files, legacy, dirName, dirHandle) {
 		completed: null,
 		duration: 0,
 		dirHandle: dirHandle,
-		absolutePosition: 0,
-		currentPosition: {
-			fileIndex: 0,
-			position: 0
-		},
+		// absolutePosition: 0,
+		// currentPosition: {
+		// 	fileIndex: 0,
+		// 	position: 0
+		// },
 		metadata: {
 			artist: baseMetadata.albumartist || '',
 			author: baseMetadata.artist || '',
@@ -110,7 +122,7 @@ async function processAddBook(files, legacy, dirName, dirHandle) {
 	}
 
 	if (totalDuration < 10) {
-		addingBook.set(false)
+		ab.addingBook = false
 		return showToast('Book too short.', 'warning')
 	}
 
@@ -122,7 +134,7 @@ async function processAddBook(files, legacy, dirName, dirHandle) {
 		const availableSpace = storageEstimate.quota > storageEstimate.usage ? storageEstimate.quota - storageEstimate.usage : 0
 
 		if (totalSize + 50000000 > availableSpace) {
-			addingBook.set(false)
+			ab.addingBook = false
 			return showToast('No enough space. Delete some old books first.', 'warning')
 		}
 
@@ -138,11 +150,12 @@ async function processAddBook(files, legacy, dirName, dirHandle) {
 	}
 
 	// save book
-	await get(db).addBook(book)
+	await ab.db.addBook(book, position)
 
-	library.update(l => [book, ...l])
+	positions.books[bookId] = position
+	library.books.unshift(book)
 
-	addingBook.set(false)
+	ab.addingBook = false
 
 	showToast('Book added', 'success')
 
@@ -150,12 +163,12 @@ async function processAddBook(files, legacy, dirName, dirHandle) {
 }
 
 export async function addBook() {
-	if (get(addingBook) == true) return
-	addingBook.set(true)
+	if (ab.addingBook == true) return
+	ab.addingBook = true
 	try {
 		const bookId = crypto.randomUUID()
 
-		if ('showDirectoryPicker' in window && get(appFSMode) == 'fsapi') {
+		if ('showDirectoryPicker' in window && abSettings.fsMode == 'fsapi') {
 			const handle = await window.showDirectoryPicker({
 				mode: 'read',
 				startIn: 'music'
@@ -177,10 +190,10 @@ export async function addBook() {
 				await processAddBook(files, true, bookName)
 			}
 			input.oncancel = () => {
-				addingBook.set(false)
+				ab.addingBook = false
 			}
 			input.onabort = () => {
-				if (get(addingBook)) addingBook.set(false)
+				if (ab.addingBook) ab.addingBook = false
 			}
 
 			input.click()
@@ -188,14 +201,14 @@ export async function addBook() {
 	} catch (error) {
 		console.error('Error adding book:', error)
 		showToast('Error adding book', 'warning')
-		addingBook.set(false)
+		ab.addingBook = false
 		throw error
 	}
 }
 
 export async function deleteBook(e, book, onStart, onEnd) {
 	if (e && e.target?.closest('button')) e.target.closest('button').blur()
-	if (window.confirm(`Are you sure you want to delete book ${get(library).find(b => b.id == book.id)?.title}?`)) {
+	if (window.confirm(`Are you sure you want to delete book ${library.books.find(b => b.id == book.id)?.title}?`)) {
 		try {
 			if (onStart) onStart()
 
@@ -204,8 +217,8 @@ export async function deleteBook(e, book, onStart, onEnd) {
 				await opfs.removeEntry(book.id, { recursive: true })
 			}
 
-			await get(db).deleteBook(book.id)
-			library.update(lib => lib.filter(b => b.id != book.id))
+			await ab.db.deleteBook(book.id)
+			library.books = library.books.filter(b => b.id != book.id)
 
 			if (onEnd) onEnd()
 			showToast('Book deleted', 'success')
@@ -313,12 +326,19 @@ async function getImageFromBlob(blobUrl) {
 
 export async function updateBook(book, param, val) {
 	if (param) {
-		library.update((lib) => {
-			lib.find(b => b.id == book.id)[param] = val
-			return lib
-		})
+		library.books.find(b => b.id == book.id)[param] = val
 	}
-	await get(db)?.updateBook(book)
+	await ab.db?.updateBook($state.snapshot(book))
+}
+
+export async function updatePosition(absolutePosition, fileIndex, filePosition) {
+	positions.books[ab.currentBook.id] = {
+		id: ab.currentBook.id,
+		absolutePosition,
+		fileIndex,
+		filePosition
+	}
+	await ab.db?.updatePosition($state.snapshot(positions.books[ab.currentBook.id]))
 }
 
 window.abShowAllFiles = async function() {

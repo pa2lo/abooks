@@ -1,14 +1,14 @@
 <script>
 	import { createEventDispatcher } from "svelte"
-	import { sleepTimerModal, sleepActive, isPlaying } from "./store"
+	import { ab, sleepTimer } from "./store.svelte"
 	import { secondsToHMS, formatDate } from "./helpers"
 
 	import Modal from "./components/Modal.svelte"
 
 	const dispatch = createEventDispatcher()
 
-	let sleepModel = 30
-	let remaining = null
+	let sleepModel = $state(30)
+	let remaining = $state(null)
 	let interval
 
 	function startSleep() {
@@ -16,30 +16,30 @@
 		interval = setInterval(() => {
 			if (remaining > 1) {
 				remaining -= 1
-				if (remaining == 30 && !$sleepTimerModal) $sleepTimerModal = true
+				if (remaining == 30 && !sleepTimer.active) sleepTimer.active = true
 			} else {
-				$sleepActive = false
-				if ($isPlaying) dispatch('finished')
-				if ($sleepTimerModal) $sleepTimerModal = false
+				sleepTimer.isActive = false
+				if (ab.isPlaying) dispatch('finished')
+				if (sleepTimer.active) sleepTimer.active = false
 				clearInterval(interval)
 			}
 		}, 1000)
-		$sleepActive = true
+		sleepTimer.isActive = true
 	}
 
 	function stopSleep() {
 		clearInterval(interval)
-		$sleepActive = false
+		sleepTimer.isActive = false
 	}
 
 	function handleModalKeyup(e) {
-		if (e.detail.key == 'Enter') {
-			if ($sleepActive) stopSleep()
+		if (e.key == 'Enter') {
+			if (sleepTimer.isActive) stopSleep()
 			else startSleep()
 		}
 	}
 	function handleModalKeyDown(e) {
-		if (!$sleepActive) {
+		if (!sleepTimer.isActive) {
 			if (e.code == 'ArrowLeft') {
 				sleepModel = Math.max(sleepModel - 5, 5)
 				e.stopPropagation()
@@ -52,10 +52,10 @@
 	}
 </script>
 
-<Modal on:close={() => $sleepTimerModal = false} show={$sleepTimerModal} width="narrow" on:keyup={handleModalKeyup} on:keydown={handleModalKeyDown}>
+<Modal on:close={() => sleepTimer.active = false} show={sleepTimer.active} width="narrow" onkeyup={handleModalKeyup} onkeydown={handleModalKeyDown}>
 	<div class="ta-c">
 		<h2 class="modal-header lineSmall">SLeep Timer</h2>
-		{#if !$sleepActive}
+		{#if !sleepTimer.isActive}
 			<p class="lineSmall lh125">Stop playback in</p>
 			<div class="sleep-timer-time lineSmall">
 				{ secondsToHMS(sleepModel) }
@@ -63,7 +63,7 @@
 			<div class="flex lineSmaller" style="--complete: {(sleepModel - 5) / 115 * 100}%">
 				<input class="input-range" type="range" min=5 max=120 bind:value={sleepModel} />
 			</div>
-			<button class="button isFull" on:click={startSleep}>Start</button>
+			<button class="button isFull" onclick={startSleep}>Start</button>
 		{:else}
 			<p class="lineSmall lh125">Playback will stop in</p>
 			<div class="sleep-timer-time lineSmall">
@@ -72,7 +72,7 @@
 			<div class="flex lineSmaller">
 				<progress class="sleep-progress" max=100 value={(remaining / 60) / sleepModel * 100}></progress>
 			</div>
-			<button class="button button-light isFull" on:click={stopSleep}>Cancel</button>
+			<button class="button button-light isFull" onclick={stopSleep}>Cancel</button>
 		{/if}
 	</div>
 </Modal>

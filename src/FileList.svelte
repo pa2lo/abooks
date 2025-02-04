@@ -1,6 +1,7 @@
 <script>
 	import { createEventDispatcher } from "svelte"
-	import { fileListBook, fileListData, fileListModal, currentBook } from "./store"
+	import { ab, fileList } from "./store.svelte"
+	import { library, positions } from "./library.svelte"
 	import { secondsToHMS } from "./helpers"
 
 	import Modal from "./components/Modal.svelte"
@@ -9,7 +10,7 @@
 
 	const dispatch = createEventDispatcher()
 
-	let timeModel = 'start'
+	let timeModel = $state('start')
 	const timeOptions = ['start', 'duration']
 
 	function seekTo(time) {
@@ -17,22 +18,22 @@
 		dispatch('seekTo', time)
 	}
 
-	$: isPlayable = $currentBook?.id == $fileListBook?.id
+	let isPlayable = $derived(ab.currentBook?.id == fileList.book?.id)
 </script>
 
-<Modal title="File list" on:close={() => $fileListModal = false} show={$fileListModal}>
-	<h4 class="book-modal-title line">{ $fileListBook.title }</h4>
-	{#if $fileListData == null}
+<Modal title="File list" on:close={() => fileList.active = false} show={fileList.active}>
+	<h4 class="book-modal-title line">{ fileList.book.title }</h4>
+	{#if fileList.files == null}
 		<div class="loader line"></div>
 	{:else}
 		<div class="line">
 			<SettingField options={timeOptions} bind:group={timeModel} />
 		</div>
 		<div class="book-modal-cont line">
-			{#each $fileListData as file, i}
-				<InfoLine title={file.title} value={secondsToHMS(file[timeModel])} reverse clickable={isPlayable} active={isPlayable && $currentBook.currentPosition.fileIndex == i} on:click={() => isPlayable && seekTo(file.start)} />
+			{#each fileList.files as file, i}
+				<InfoLine title={file.title} value={secondsToHMS(file[timeModel])} reverse clickable={isPlayable} active={isPlayable && positions.books[ab.currentBook.id].fileIndex == i} onclick={() => isPlayable && seekTo(file.start)} />
 			{/each}
-			<InfoLine title="Total time" value={secondsToHMS($fileListBook.duration)} reverse divided />
+			<InfoLine title="Total time" value={secondsToHMS(fileList.book.duration)} reverse divided />
 		</div>
 	{/if}
 </Modal>

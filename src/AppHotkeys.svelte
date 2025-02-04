@@ -1,9 +1,9 @@
 <script>
 	import Modal from "./components/Modal.svelte"
 
-	let hotkeysModal = false
+	let hotkeysModal = $state(false)
 
-	export function showHotkeys() {
+	export function show() {
 		hotkeysModal = true
 	}
 </script>
@@ -52,6 +52,10 @@
 		<p class="hotkey-info lineSmall flex ai-c">
 			<strong class="hotkey-key">b</strong>
 			Add bookmark
+		</p>
+		<p class="hotkey-info lineSmall flex ai-c">
+			<strong class="hotkey-key">j</strong>
+			Jump to
 		</p>
 		<p class="hotkey-info lineSmall flex ai-c">
 			<strong class="hotkey-key">s</strong>

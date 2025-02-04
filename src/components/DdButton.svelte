@@ -1,12 +1,10 @@
 <script>
 	import Icon from "./Icon.svelte"
 
-	export let title
-	export let icon
-	export let disabled
+	let { title, icon, onclick, disabled } = $props()
 </script>
 
-<button class="dd-button" on:click tabindex=0 disabled={disabled}>
+<button class="dd-button" {onclick} {disabled} tabindex=0>
 	<Icon icon={icon} />
 	<span class="dd-button-text">{title}</span>
 </button>
