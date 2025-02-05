@@ -33,7 +33,9 @@
 	let lastFocusedEl
 	function onIntroEnd() {
 		lastFocusedEl = document.activeElement
-		modalEl.focus()
+		let autofocusel = modalEl.querySelector('.autofocus')
+		if (autofocusel) autofocusel.focus()
+		else modalEl.focus()
 	}
 	function onOutroEnd() {
 		if (lastFocusedEl && document.contains(lastFocusedEl) && !lastFocusedEl.closest('.dd-cont')) lastFocusedEl.focus()

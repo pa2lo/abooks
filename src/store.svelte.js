@@ -28,7 +28,7 @@ export const bookInfo = $state({
 	book: null
 })
 export function showBookInfo(book) {
-	closeModals(sleepTimer, fileList, bookmarks, newBookmark)
+	closeModals(sleepTimer, fileList, bookmarks, newBookmark, jumpTo)
 
 	bookInfo.book = book
 	bookInfo.active = true
@@ -41,7 +41,7 @@ export const fileList = $state({
 	files: null
 })
 export function showFileList(book) {
-	closeModals(sleepTimer, bookmarks, newBookmark)
+	closeModals(sleepTimer, bookmarks, newBookmark, jumpTo)
 
 	let accumulated = 0
 	let files = []
@@ -72,7 +72,7 @@ export const bookmarks = $state({
 	book: null
 })
 export function showBookmarks(book) {
-	closeModals(sleepTimer, fileList, newBookmark)
+	closeModals(sleepTimer, fileList, newBookmark, jumpTo)
 
 	bookmarks.book = book
 	bookmarks.active = true
@@ -83,7 +83,7 @@ export const newBookmark = $state({
 	data: {}
 })
 export function showNewBookmark(position) {
-	closeModals(sleepTimer, fileList, bookmarks)
+	closeModals(sleepTimer, fileList, bookmarks, jumpTo)
 
 	newBookmark.data = {
 		title: '',
@@ -104,12 +104,13 @@ export const jumpTo = $state({
 	}
 })
 export function showJumpTo(max, current) {
+	closeModals(sleepTimer, fileList, newBookmark)
+
 	jumpTo.max = max
-	jumpTo.model = {
-		h: max > 3600 ? Math.floor(current / 3600) : '0',
-		m: Math.floor((current % 3600) / 60).toString().padStart(2, '0'),
-		s: (parseInt(current) % 60).toString().padStart(2, '0')
-	}
+	let h = max > 3600 ? Math.floor(current / 3600) : '0'
+	let m = Math.floor((current % 3600) / 60).toString().padStart(2, '0')
+	let s = (parseInt(current) % 60).toString().padStart(2, '0')
+	jumpTo.model = {h, m, s}
 	jumpTo.active = true
 }
 
