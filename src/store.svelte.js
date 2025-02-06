@@ -1,4 +1,5 @@
-import { saveLSSetting } from "./helpers"
+import { writable, get } from "svelte/store"
+import { saveLSSetting } from "./utils/helpers"
 
 // global
 export const ab = $state({
@@ -21,6 +22,17 @@ export const abSettings = $state({
 		saveLSSetting('timeDisplay', 'total', abSettings.timeDisplay)
 	}
 })
+
+// lang
+let browserLang = navigator.language.split('-')[0]
+let defaultLang = ['en', 'sk', 'cz'].includes(browserLang) ? browserLang : 'en'
+export const lang = writable(localStorage.getItem('lang') || defaultLang)
+export function switchLang() {
+	saveLSSetting('lang', defaultLang, get(lang))
+}
+export function getLang() {
+	return get(lang)
+}
 
 // book info
 export const bookInfo = $state({

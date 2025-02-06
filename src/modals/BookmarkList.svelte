@@ -1,11 +1,12 @@
 <script>
 	import { createEventDispatcher } from "svelte"
-	import { ab, bookmarks, showToast } from "./store.svelte"
-	import { secondsToHMS, formatDate } from "./helpers"
-	import { updateBook } from "./library.svelte"
+	import { ab, bookmarks, showToast } from "../store.svelte"
+	import { secondsToHMS, formatDate } from "../utils/helpers"
+	import { updateBook } from "../library.svelte"
+	import { t } from "../utils/translation.svelte"
 
-	import Modal from "./components/Modal.svelte"
-	import InfoLine from "./components/InfoLine.svelte"
+	import Modal from "../components/Modal.svelte"
+	import InfoLine from "../components/InfoLine.svelte"
 
 	const dispatch = createEventDispatcher()
 
@@ -13,7 +14,7 @@
 		bookmarks.book.bookmarks = bookmarks.book.bookmarks.filter(b => b.added != ts)
 
 		updateBook(bookmarks.book)
-		showToast('Bookmark removed', 'success')
+		showToast($t('bmRemoved'), 'success')
 	}
 
 	function seekTo(time) {
@@ -25,7 +26,7 @@
 	let sortedBookmarks = $derived(bookmarks.active ? bookmarks.book.bookmarks.toSorted((a, b) => a.position - b.position) : [])
 </script>
 
-<Modal title="Bookmarks" on:close={() => bookmarks.active = false} show={bookmarks.active}>
+<Modal title={$t('bookmarks')} on:close={() => bookmarks.active = false} show={bookmarks.active}>
 	<h4 class="book-modal-title lineSmaller">{ bookmarks.book.title }</h4>
 	<div class="book-modal-cont">
 		{#if bookmarks.book.bookmarks?.length}
@@ -33,7 +34,7 @@
 				<InfoLine title={bookmark.title || formatDate(bookmark.added)} value={secondsToHMS(bookmark.position)} reverse clickable={isPlayable} onclick={() => isPlayable && seekTo(bookmark.position)} removable={() => deleteBookmark(bookmark.added)} />
 			{/each}
 		{:else}
-			<p class="info-line-outer">You have no bookmarks for this book.</p>
+			<p class="info-line-outer">{$t('noBookmarks')}</p>
 		{/if}
 	</div>
 </Modal>

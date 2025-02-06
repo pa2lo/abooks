@@ -1,5 +1,6 @@
 <script>
 	import { createEventDispatcher } from "svelte"
+	import { t } from "../utils/translation.svelte"
 
 	let {
 		options,
@@ -23,7 +24,7 @@
 		{#each options as option}
 			<label class="settings-group-option" class:isSelected={group == (option.value ? option.value : option)}>
 				<input class="settings-group-input-invisible" type="radio" name={id} bind:group={group} value={option.value || option} onchange={onChange} />
-				<span class="settings-group-option-title">{option.title || option}</span>
+				<span class="settings-group-option-title">{$t(option.title || option)}</span>
 			</label>
 		{/each}
 	</div>

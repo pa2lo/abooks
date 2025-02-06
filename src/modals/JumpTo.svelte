@@ -1,10 +1,11 @@
 <svelte:options runes={true} />
 <script>
 	import { createEventDispatcher } from "svelte"
-	import { jumpTo } from "./store.svelte"
+	import { jumpTo } from "../store.svelte"
+	import { t } from "../utils/translation.svelte"
 
-	import Modal from "./components/Modal.svelte"
-	import TimeInput from "./components/TimeInput.svelte"
+	import Modal from "../components/Modal.svelte"
+	import TimeInput from "../components/TimeInput.svelte"
 
 	const dispatch = createEventDispatcher()
 
@@ -42,14 +43,14 @@
 
 <Modal on:close={() => jumpTo.active = false} show={jumpTo.active} width="narrow">
 	<form class="ta-c" onsubmit={onFormSubmit}>
-		<h2 class="modal-header ta-c">Jump to</h2>
+		<h2 class="modal-header ta-c">{$t('jumpTo')}</h2>
 		<div class="jumpto-inputs flex line">
 			{#if maxHours > 0}
-				<TimeInput label="Hour" autofocus max={maxHours} bind:value={jumpTo.model.h} onblur={checkMaxLength} onenter={onFormSubmit} nextel={minEl} />
+				<TimeInput label={$t('hour')} autofocus max={maxHours} bind:value={jumpTo.model.h} onblur={checkMaxLength} onenter={onFormSubmit} nextel={minEl} />
 			{/if}
-			<TimeInput label="Minute" autofocus mins bind:el={minEl} bind:value={jumpTo.model.m} onblur={checkMaxLength} onenter={onFormSubmit} nextel={secEl} />
-			<TimeInput label="Second" autofocus mins bind:el={secEl} bind:value={jumpTo.model.s} onblur={checkMaxLength} onenter={onFormSubmit} />
+			<TimeInput label={$t('minute')} autofocus mins bind:el={minEl} bind:value={jumpTo.model.m} onblur={checkMaxLength} onenter={onFormSubmit} nextel={secEl} />
+			<TimeInput label={$t('second')} autofocus mins bind:el={secEl} bind:value={jumpTo.model.s} onblur={checkMaxLength} onenter={onFormSubmit} />
 		</div>
-		<button class="button isFull" type="submit">Set time</button>
+		<button class="button isFull" type="submit">{$t('jumpToTime')}</button>
 	</form>
 </Modal>

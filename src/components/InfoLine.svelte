@@ -1,4 +1,6 @@
 <script>
+	import { t } from "../utils/translation.svelte"
+
 	import Icon from "./Icon.svelte"
 
 	let {
@@ -28,7 +30,7 @@
 		</div>
 	{/if}
 	{#if removable}
-		<button class="bookmark-x" onclick={removable} title="Delete bookmark">
+		<button class="bookmark-x" onclick={removable} title={$t('delBookmark')}>
 			<Icon icon="x" />
 		</button>
 	{/if}

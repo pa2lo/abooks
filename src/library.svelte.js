@@ -1,9 +1,42 @@
-import { ab, abSettings, showToast } from './store.svelte'
-import { getOPFS, getDir, saveFile } from './helpers'
+import { ab, abSettings, showToast, getLang } from './store.svelte'
+import { getOPFS, getDir, saveFile } from './utils/helpers'
 import * as mm from 'music-metadata'
 
 const supportedFormats = ['audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/ogg', 'audio/x-m4a']
 let persistanceChecked = false
+
+const labels = {
+	en: {
+		exist: "Book with this name is already in your library. Would you like to add book anyway?",
+		remove: "Are you sure you want to delete book %t?",
+		short: "Book too short",
+		noSpace: "You don't have enough space to save book files. Delete some old books first.",
+		added: "Book added",
+		addError: "Error adding book",
+		deleted: "Book deleted",
+		noFiles: "No files in selected folder"
+	},
+	sk: {
+		exist: "Kniha s týmto názvom sa už nachádza vo vašej knižnici. Chceli by ste napriek tomu pridať knihu?",
+		remove: "Naozaj chcete odstrániť knihu %t?",
+		short: "Kniha je príliš krátka",
+		noSpace: "Nemáte dostatok miesta na uloženie súborov knihy. Najprv odstráňte staré knihy.",
+		added: "Kniha pridaná",
+		addError: "Chyba pri pridávaní knihy",
+		deleted: "Kniha bola odstránená",
+		noFiles: "Vo vybratom priečinku nie sú žiadne súbory"
+	},
+	cz: {
+		exist: "Kniha s tímto názvem je již ve vaší knihovně. Chtěli byste přesto přidat knihu?",
+		remove: "Opravdu chcete smazat knihu %t?",
+		short: "Kniha je příliš krátká",
+		noSpace: "Nemáte dostatek místa pro uložení souborů knihy. Nejprve smažte některé staré knihy.",
+		added: "Kniha přidána",
+		addError: "Chyba při přidávání knihy",
+		deleted: "Kniha smazána",
+		noFiles: "Ve vybrané složce nejsou žádné soubory"
+	}
+}
 
 export const library = $state({
 	books: []
@@ -39,7 +72,10 @@ async function processAddBook(files, legacy, dirName, dirHandle) {
 
 	console.log(`adding book from dir ${dirName} with ${files.length} files`)
 
-	if (!files.length) return alert('No files in folder')
+	if (!files.length) {
+		ab.addingBook = false
+		return alert(labels[getLang()].noFiles)
+	}
 
 	const sortedFiles = sortAudioFiles(files, legacy)
 
@@ -53,7 +89,7 @@ async function processAddBook(files, legacy, dirName, dirHandle) {
 	let shouldContinue = true
 	if (library.books.some(b => b.title == bookTitle)) {
 		shouldContinue = false
-		if (window.confirm('Book with this name is already in your library. Would you like to add book anyway?')) shouldContinue = true
+		if (window.confirm(labels[getLang()].exist)) shouldContinue = true
 		else shouldContinue = false
 	}
 
@@ -123,7 +159,7 @@ async function processAddBook(files, legacy, dirName, dirHandle) {
 
 	if (totalDuration < 10) {
 		ab.addingBook = false
-		return showToast('Book too short.', 'warning')
+		return showToast(labels[getLang()].short, 'warning')
 	}
 
 	book.duration = totalDuration
@@ -135,7 +171,7 @@ async function processAddBook(files, legacy, dirName, dirHandle) {
 
 		if (totalSize + 50000000 > availableSpace) {
 			ab.addingBook = false
-			return showToast('No enough space. Delete some old books first.', 'warning')
+			return showToast(labels[getLang()].noSpace, 'warning')
 		}
 
 		try {
@@ -157,7 +193,7 @@ async function processAddBook(files, legacy, dirName, dirHandle) {
 
 	ab.addingBook = false
 
-	showToast('Book added', 'success')
+	showToast(labels[getLang()].added, 'success')
 
 	if (!persistanceChecked) checkStoragePersistance()
 }
@@ -200,7 +236,7 @@ export async function addBook() {
 		}
 	} catch (error) {
 		console.error('Error adding book:', error)
-		showToast('Error adding book', 'warning')
+		showToast(labels[getLang()].addError, 'warning')
 		ab.addingBook = false
 		throw error
 	}
@@ -208,7 +244,7 @@ export async function addBook() {
 
 export async function deleteBook(e, book, onStart, onEnd) {
 	if (e && e.target?.closest('button')) e.target.closest('button').blur()
-	if (window.confirm(`Are you sure you want to delete book ${library.books.find(b => b.id == book.id)?.title}?`)) {
+	if (window.confirm(labels[getLang()].remove.replace('%t', library.books.find(b => b.id == book.id)?.title))) {
 		try {
 			if (onStart) onStart()
 
@@ -221,7 +257,7 @@ export async function deleteBook(e, book, onStart, onEnd) {
 			library.books = library.books.filter(b => b.id != book.id)
 
 			if (onEnd) onEnd()
-			showToast('Book deleted', 'success')
+			showToast(labels[getLang()].deleted, 'success')
 		} catch (error) {
 			console.error('Error deleting book:', error)
 			throw error

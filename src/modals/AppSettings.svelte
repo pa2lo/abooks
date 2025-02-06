@@ -1,11 +1,12 @@
 <script>
 	import { createEventDispatcher } from "svelte"
-	import { abSettings } from "./store.svelte"
-	import { saveLSSetting } from "./helpers"
+	import { abSettings, lang, switchLang } from "../store.svelte"
+	import { saveLSSetting } from "../utils/helpers"
+	import { t } from "../utils/translation.svelte"
 
-	import Modal from "./components/Modal.svelte"
-	import SettingField from "./components/SettingField.svelte"
-	import InfoLine from "./components/InfoLine.svelte"
+	import Modal from "../components/Modal.svelte"
+	import SettingField from "../components/SettingField.svelte"
+	import InfoLine from "../components/InfoLine.svelte"
 
 	let settingsModal = $state(false)
 
@@ -82,33 +83,45 @@
 	}
 
 	const timeDisplayOptions = [{
-		title: 'Total time',
+		title: 'totalTime',
 		value: 'total'
 	}, {
-		title: 'Remaining',
+		title: 'remaining',
 		value: 'remaining'
 	}]
 
 	const appFSOptions = [{
-		title: 'Device files',
+		title: 'devFiles',
 		value: 'fsapi'
 	}, {
-		title: 'App memory',
+		title: 'appMem',
 		value: 'opfs'
 	}]
 	function switchAppFSMode() {
 		saveLSSetting('fsMode', 'fsapi', abSettings.fsMode)
 	}
 	const hasFSOption = 'showDirectoryPicker' in window
+
+	const langOptions = [{
+		title: 'EN',
+		value: 'en'
+	}, {
+		title: 'SK',
+		value: 'sk'
+	}, {
+		title: 'CZ',
+		value: 'cz'
+	}]
 </script>
 
-<Modal title="Settings" on:close={() => settingsModal = false} show={settingsModal} width="narrow">
-	<SettingField label="Color scheme" options={schemeOptions} bind:group={appScheme} on:change={switchScheme} />
-	<SettingField label="Rewind time" options={seekOptions} bind:group={abSettings.seek} on:change={switchSeek} />
-	<SettingField label="Prev/next media keys" options={mediaKeysOptions} bind:group={abSettings.mediaKeys} on:change={switchMediaKeys} />
-	<SettingField label="Time display" options={timeDisplayOptions} bind:group={abSettings.timeDisplay} on:change={abSettings.switchTimeDisplay} />
+<Modal title={$t('settings')} on:close={() => settingsModal = false} show={settingsModal} width="narrow">
+	<SettingField label={$t('lang')} options={langOptions} bind:group={$lang} on:change={switchLang} />
+	<SettingField label={$t('colorScheme')} options={schemeOptions} bind:group={appScheme} on:change={switchScheme} />
+	<SettingField label={$t('rewindTime')} options={seekOptions} bind:group={abSettings.seek} on:change={switchSeek} />
+	<SettingField label={$t('mediaKeys')} options={mediaKeysOptions} bind:group={abSettings.mediaKeys} on:change={switchMediaKeys} />
+	<SettingField label={$t('timeDisplay')} options={timeDisplayOptions} bind:group={abSettings.timeDisplay} on:change={abSettings.switchTimeDisplay} />
 	<div class="lineSmaller">
-		<p class="settings-group-label">App color</p>
+		<p class="settings-group-label">{$t('appColor')}</p>
 		<div class="settings-group-colors flex">
 			{#each Object.entries(colorOptions) as entry}
 				<button class="settings-group-color" class:isSelected={entry[0] == appColor} style="--bg: {entry[1]};" onclick={() => switchColor(entry[0])} aria-label={entry[0]}></button>
@@ -116,18 +129,18 @@
 		</div>
 	</div>
 	{#if hasFSOption}
-		<SettingField label="Books storage" options={appFSOptions} bind:group={abSettings.fsMode} on:change={switchAppFSMode}>
+		<SettingField label={$t('booksStorage')} options={appFSOptions} bind:group={abSettings.fsMode} on:change={switchAppFSMode}>
 			<p class="settings-note">
 				{#if abSettings.fsMode == 'fsapi'}
-					Book files will be read from the device's storage. The app will have a smaller size but may ask for permissions more often.
+					{$t('booksStorageN1')}
 				{:else}
-					New books will be stored in apps memory. This option may cause higher app size, but app will not ask for permissions.
+					{$t('booksStorageN2')}
 				{/if}
 			</p>
 		</SettingField>
 	{/if}
 	{#if appSize}
-		<p class="lineSmall lh125">App storage usage:</p>
+		<p class="lineSmall lh125">{$t('appStorageUsed')}</p>
 		<InfoLine title="File system" value={`${appSize.filesystem}MB`} />
 		<InfoLine title="DB" value={`${appSize.db}MB`} />
 	{/if}

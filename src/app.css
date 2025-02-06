@@ -167,7 +167,7 @@ img {
 }
 
 h1 {
-	font-size: 2em;
+	font-size: 1.5rem;
 	line-height: 1.1;
 	font-weight: 700;
 	margin: 0;
@@ -452,7 +452,7 @@ main {
 .audio-player-thumb-cont {
 	aspect-ratio: 1;
 	width: min(95%, 45svh);
-	margin: 0 auto;
+	margin: auto;
 }
 
 .audio-player-thumb {
@@ -484,29 +484,21 @@ main {
 .audio-player-info {
 	text-align: center;
 	line-height: 1.25;
+	min-width: 0;
 }
 
-.audio-player-title, .audio-player-part {
-	height: 2lh;
-	display: -webkit-box;
-	-webkit-line-clamp: 3;
-	line-clamp: 3;
-	-webkit-box-orient: vertical;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.audio-player-title {
+.audio-player-book-title {
 	font-size: 1rem;
 	font-weight: 700;
 	align-content: end;
 }
-.audio-player-part {
+.audio-player-book-title, .audio-player-book-track {
+	white-space: nowrap;
+	overflow: hidden;
+}
+.audio-player-book-track {
 	align-content: start;
 	margin-top: 0.25rem;
-}
-.audio-player-part-of {
-	display: inline-block;
 }
 
 .audio-player-controls {
@@ -554,7 +546,6 @@ main {
 }
 
 .audio-player-header {
-	margin-bottom: auto;
 	gap: 1.25rem;
 }
 .audio-player-actions {
@@ -565,6 +556,25 @@ main {
 	position: relative;
 	display: flex;
 	flex-direction: column;
+}
+
+.marquee-text {
+	display: block;
+	flex: 1;
+}
+.marquee-inner {
+	gap: 2rem;
+	min-width: fit-content;
+}
+.marquee.active .marquee-inner {
+	animation: marquee var(--speed) linear infinite;
+}
+.marquee-note {
+	display: inline-block;
+}
+@keyframes marquee {
+	33% {transform: translateX(0);}
+	to {transform: translateX(calc(-50% - 1rem));}
 }
 
 .book-files-marker, .book-bookmark-marker {
@@ -838,7 +848,8 @@ body:has(.modal) {
 	flex-wrap: wrap;
 }
 .book-modal-buttons .button {
-	flex: 1 1 auto;
+	flex: 1;
+	min-width: fit-content;
 }
 
 .hotkey-info, .info-line, .info-line-outer {
@@ -1035,7 +1046,6 @@ body:has(.modal) {
 	.audio-player-thumb-cont {
 		grid-row: 2/6;
 		grid-column: 1;
-		margin: auto;
 		width: auto;
 	}
 	.audio-player-info {
@@ -1051,12 +1061,6 @@ body:has(.modal) {
 		height: auto;
 		width: 50%;
 		mask-image: linear-gradient(to right, black, transparent);
-	}
-	.audio-player-progress {
-		align-self: end;
-	}
-	.audio-player-controls {
-		align-self: start;
 	}
 }
 
@@ -1129,10 +1133,8 @@ body:has(.modal) {
 		text-align: left;
 		margin-block: -.25rem;
 	}
-	.audio-player-title, .audio-player-part {
-		height: auto;
-		display: block;
-		line-clamp: unset;
+	.audio-player-book-title, .audio-player-book-track {
+		white-space: unset;
 	}
 	.audio-player-progress {
 		grid-row: 2;

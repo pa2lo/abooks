@@ -1,5 +1,6 @@
 <script>
-	import Modal from "./components/Modal.svelte"
+	import Modal from "../components/Modal.svelte"
+	import { t } from "../utils/translation.svelte"
 
 	let hotkeysModal = $state(false)
 
@@ -8,74 +9,74 @@
 	}
 </script>
 
-<Modal title="Keyboard shortcuts" on:close={() => hotkeysModal = false} show={hotkeysModal} width="narrow">
+<Modal title={$t('shortcuts')} on:close={() => hotkeysModal = false} show={hotkeysModal} width="narrow">
 	<div class="line">
-		<h4 class="lineSmall">General</h4>
+		<h4 class="lineSmall">{$t('general')}</h4>
 		<p class="hotkey-info lineSmall flex ai-c">
 			<strong class="hotkey-key">space</strong>
-			Play / Pause
+			{$t('keySP')}
 		</p>
 		<p class="hotkey-info lineSmall flex ai-c">
 			<strong class="hotkey-key">◀</strong>
 			<strong class="hotkey-key">▶</strong>
-			Rewind backward / forward
+			{$t('keyArrH')}
 		</p>
 		<p class="hotkey-info lineSmall flex ai-c">
 			<strong class="hotkey-key">▼</strong>
 			<strong class="hotkey-key">▲</strong>
-			Volume down / up
+			{$t('keyArrV')}
 		</p>
 		<p class="hotkey-info lineSmall flex ai-c">
 			<strong class="hotkey-key">p</strong>
-			Previous track
+			{$t('prevTrack')}
 		</p>
 		<p class="hotkey-info lineSmall flex ai-c">
 			<strong class="hotkey-key">n</strong>
-			Next track
+			{$t('nextTrack')}
 		</p>
 		<p class="hotkey-info lineSmall flex ai-c">
 			<strong class="hotkey-key">i</strong>
-			Book info
+			{$t('bookInfo')}
 		</p>
 		<p class="hotkey-info lineSmall flex ai-c">
 			<strong class="hotkey-key">f</strong>
-			File list
+			{$t('fileList')}
 		</p>
 		<p class="hotkey-info lineSmall flex ai-c">
 			<strong class="hotkey-key">d</strong>
-			Bookmarks
+			{$t('bookmarks')}
 		</p>
 		<p class="hotkey-info lineSmall flex ai-c">
 			<strong class="hotkey-key">a</strong>
-			Add book
+			{$t('addBook')}
 		</p>
 		<p class="hotkey-info lineSmall flex ai-c">
 			<strong class="hotkey-key">b</strong>
-			Add bookmark
+			{$t('addBookmark')}
 		</p>
 		<p class="hotkey-info lineSmall flex ai-c">
 			<strong class="hotkey-key">j</strong>
-			Jump to
+			{$t('jumpTo')}
 		</p>
 		<p class="hotkey-info lineSmall flex ai-c">
 			<strong class="hotkey-key">s</strong>
-			Sleep timer
+			{$t('sleepTimer')}
 		</p>
 		<p class="hotkey-info lineSmall flex ai-c">
 			<strong class="hotkey-key">esc</strong>
-			Close modal
+			{$t('keyEsc')}
 		</p>
 	</div>
 	<div class="line">
-		<h4 class="lineSmall">Sleep timer</h4>
+		<h4 class="lineSmall">{$t('sleepTimer')}</h4>
 		<p class="hotkey-info lineSmall flex ai-c">
 			<strong class="hotkey-key">◀</strong>
 			<strong class="hotkey-key">▶</strong>
-			Set time
+			{$t('keySlE')}
 		</p>
 		<p class="hotkey-info lineSmall flex ai-c">
 			<strong class="hotkey-key">enter</strong>
-			Start / stop timer
+			{$t('keySlArr')}
 		</p>
 	</div>
 </Modal>

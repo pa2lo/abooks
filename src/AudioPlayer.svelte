@@ -2,11 +2,13 @@
 	import { onMount, onDestroy, createEventDispatcher } from 'svelte'
 	import { ab, abSettings, showBookInfo, showFileList, sleepTimer, showBookmarks, showNewBookmark, showJumpTo, showToast } from './store.svelte'
 	import { library, positions, updateBook, updatePosition } from './library.svelte'
-	import { secondsToHMS, selfFocus, removeFileExtension, isiOS, getOPFS, getDir, getFile, throttle } from './helpers'
+	import { secondsToHMS, selfFocus, removeFileExtension, isiOS, getOPFS, getDir, getFile, throttle } from './utils/helpers'
+	import { t } from './utils/translation.svelte'
 
 	import Icon from './components/Icon.svelte'
 	import IcoButton from './components/IcoButton.svelte'
 	import DdButton from './components/DdButton.svelte'
+	import MarqueeText from './modals/MarqueeText.svelte'
 
 	let audioElement = $state()
 	let bookFilesMarkers = $state([])
@@ -162,7 +164,7 @@
 		if (!ab.currentBook.legacy && !currentBookGranted) {
 			const allowed = await checkPermissions(ab.currentBook.dirHandle || bookFiles[0].file)
 			if (!allowed) {
-				showToast('Permissions are required to play', 'warning')
+				showToast($t('permRequired'), 'warning')
 				return false
 			}
 			currentBookGranted = true
@@ -178,7 +180,7 @@
 			audioElement.currentTime = positions.books[ab.currentBook.id].filePosition
 		} catch (error) {
 			console.error(error)
-			showToast('Unable to load file', 'warning')
+			showToast($t('clFile'), 'warning')
 			return false
 		}
 
@@ -420,9 +422,9 @@
 	}
 
 	const eqOptions = [
-		{value: 'off', title: 'EQ off'},
-		{value: 'ls1', title: 'Less Bass'},
-		{value: 'ls2', title: 'No Bass'}
+		{value: 'off', title: 'eqOff'},
+		{value: 'ls1', title: 'eqLB'},
+		{value: 'ls2', title: 'eqNB'}
 	]
 
 	// audio events
@@ -552,7 +554,7 @@
 		<div class="small-player-info">
 			{ ab.currentBook.title }
 		</div>
-		<button class="small-player-button" onclick={togglePlay} title={ab.isPlaying ? 'Pause' : 'Play'}>
+		<button class="small-player-button" onclick={togglePlay} title={$t(ab.isPlaying ? 'pause' : 'play')}>
 			<Icon icon={ab.isPlaying ? 'pause' : 'play'} />
 		</button>
 		<progress class="small-player-progress" max={ab.currentBook.duration} value={positions.books[ab.currentBook.id].absolutePosition}></progress>
@@ -570,10 +572,10 @@
 		></audio>
 		<div class="audio-player-inner">
 			<div class="audio-player-header rm-hide flex ai-c">
-				<IcoButton title="Back" icon="back" onclick={() => history.back()} />
-				<IcoButton title="File list" icon="list" clss="allow-space ml-a" onclick={() => showFileList(ab.currentBook)} />
-				<IcoButton title="Bookmarks" icon="bookmarks" clss="allow-space" disabled={!ab.currentBook.bookmarks.length} onclick={() => showBookmarks(ab.currentBook)} />
-				<IcoButton title="Book info" icon="info" clss="allow-space" onclick={() => showBookInfo(ab.currentBook)} />
+				<IcoButton title={$t('back')} icon="back" onclick={() => history.back()} />
+				<IcoButton title={$t('fileList')} icon="list" clss="allow-space ml-a" onclick={() => showFileList(ab.currentBook)} />
+				<IcoButton title={$t('bookmarks')} icon="bookmarks" clss="allow-space" disabled={!ab.currentBook.bookmarks.length} onclick={() => showBookmarks(ab.currentBook)} />
+				<IcoButton title={$t('bookInfo')} icon="info" clss="allow-space" onclick={() => showBookInfo(ab.currentBook)} />
 			</div>
 
 			<div class="audio-player-thumb-cont">
@@ -586,14 +588,11 @@
 			</div>
 
 			<div class="audio-player-info">
-				<div class="audio-player-title">
-					{ab.currentBook.title}
+				<div class="audio-player-book-title">
+					<MarqueeText text={ab.currentBook.title} />
 				</div>
-				<div class="audio-player-part">
-					{ currentFile?.title || removeFileExtension(currentFile?.name) }
-					{#if ab.currentBook.files.length > 1}
-						<span class="lighter audio-player-part-of">({currentFileIndex + 1} / {ab.currentBook.files.length})</span>
-					{/if}
+				<div class="audio-player-book-track">
+					<MarqueeText text={currentFile?.title || removeFileExtension(currentFile?.name)} note={ab.currentBook.files.length > 1 ? `(${currentFileIndex + 1} / ${ab.currentBook.files.length})` : ''} />
 				</div>
 			</div>
 
@@ -626,49 +625,49 @@
 				</div>
 			</div>
 			<div class="audio-player-controls flex ai-c">
-				<IcoButton title="Previous track" icon="prev-track" disabled={ab.currentBook.files.length < 2} onclick={() => skipToPrevTrack()} />
-				<IcoButton title="Rewind backward" icon={`backward${abSettings.seek}`} clss="bigger-button" onclick={seekBW} />
-				<button class="play-button" class:isLoading={ab.isLoading} onclick={togglePlay} title={ab.isPlaying ? 'Pause' : 'Play'}>
+				<IcoButton title={$t('prevTrack')} icon="prev-track" disabled={ab.currentBook.files.length < 2} onclick={() => skipToPrevTrack()} />
+				<IcoButton title={$t('rewBack')} icon={`backward${abSettings.seek}`} clss="bigger-button" onclick={seekBW} />
+				<button class="play-button" class:isLoading={ab.isLoading} onclick={togglePlay} title={$t(ab.isPlaying ? 'pause' : 'play')}>
 					<Icon icon={ab.isPlaying ? 'pause' : 'play'} />
 				</button>
-				<IcoButton title="Rewind forward" icon={`forward${abSettings.seek}`} clss="bigger-button" onclick={seekFW} />
-				<IcoButton title="Next track" icon="next-track" disabled={ab.currentBook.files.length < 2 || ab.currentBook.files.length == currentFileIndex+1} onclick={() => skipToNextTrack()} />
+				<IcoButton title={$t('revFwd')} icon={`forward${abSettings.seek}`} clss="bigger-button" onclick={seekFW} />
+				<IcoButton title={$t('nextTrack')} icon="next-track" disabled={ab.currentBook.files.length < 2 || ab.currentBook.files.length == currentFileIndex+1} onclick={() => skipToNextTrack()} />
 			</div>
 
 			<div class="audio-player-actions flex ai-c">
-				<IcoButton title="Sleep timer" icon="sleep" clss="allow-space" active={sleepTimer.isActive} onclick={() => sleepTimer.active = true} />
-				<IcoButton title="Add bookmark" icon="bookmark-add" clss="allow-space" onclick={() => showNewBookmark(positions.books[ab.currentBook.id].absolutePosition)} />
-				<IcoButton title="Jump to" icon="arrow-bar" clss="allow-space" onclick={() => showJumpTo(ab.currentBook.duration, positions.books[ab.currentBook.id].absolutePosition)} />
+				<IcoButton title={$t('sleepTimer')} icon="sleep" clss="allow-space" active={sleepTimer.isActive} onclick={() => sleepTimer.active = true} />
+				<IcoButton title={$t('addBookmark')} icon="bookmark-add" clss="allow-space" onclick={() => showNewBookmark(positions.books[ab.currentBook.id].absolutePosition)} />
+				<IcoButton title={$t('jumpTo')} icon="arrow-bar" clss="allow-space" onclick={() => showJumpTo(ab.currentBook.duration, positions.books[ab.currentBook.id].absolutePosition)} />
 				<div class="dd-cont">
-					<IcoButton title="Equalizer" icon="eq" clss="allow-space" active={ab.currentBook.eq != 'off'} onpointerdown={selfFocus} />
+					<IcoButton title={$t('eq')} icon="eq" clss="allow-space" active={ab.currentBook.eq != 'off'} onpointerdown={selfFocus} />
 					<div class="dd-menu dd-pop dd-top-center">
 						{#each eqOptions as option}
 							<label class="dd-options-label" class:isSelected={ab.currentBook.eq == option.value}>
 								<input class="dd-options-input" type="radio" value={option.value} name="eq" bind:group={ab.currentBook.eq} onchange={onEqChange} tabindex="0" />
-								<span>{option.title}</span>
+								<span>{$t(option.title)}</span>
 							</label>
 						{/each}
 					</div>
 				</div>
 				<div class="dd-cont">
-					<IcoButton title="Playback speed" icon="speed" clss="allow-space" active={ab.currentBook.speed != 1} onpointerdown={selfFocus} />
+					<IcoButton title={$t('playSpeed')} icon="speed" clss="allow-space" active={ab.currentBook.speed != 1} onpointerdown={selfFocus} />
 					<div class="dd-setting dd-pop dd-top-center" style="--complete: {((ab.currentBook.speed - 0.5) / 1.5) * 100}%;">
 						<span class="dd-setting-value">{ab.currentBook.speed}x</span>
-						<input class="audio-setting" type="range" min="0.5" max="2" step="0.1" bind:value={ab.currentBook.speed} oninput={onSpeedChange} aria-label="Playback speed" tabindex="0" />
+						<input class="audio-setting" type="range" min="0.5" max="2" step="0.1" bind:value={ab.currentBook.speed} oninput={onSpeedChange} aria-label={$t('playSpeed')} tabindex="0" />
 					</div>
 				</div>
 				<div class="dd-cont">
-					<IcoButton title="Volume" icon={getVolumeIcon()} clss="allow-space" active={ab.currentBook.volume != 1} onpointerdown={selfFocus} />
+					<IcoButton title={$t('volume')} icon={getVolumeIcon()} clss="allow-space" active={ab.currentBook.volume != 1} onpointerdown={selfFocus} />
 					<div class="dd-setting dd-pop dd-top-center" style="--complete: {ab.currentBook.volume * 100}%;">
-						<input class="audio-setting" type="range" min="0" max="1" step="0.1" bind:value={ab.currentBook.volume} oninput={onVolumeChange} aria-label="Volume" tabindex="0" />
+						<input class="audio-setting" type="range" min="0" max="1" step="0.1" bind:value={ab.currentBook.volume} oninput={onVolumeChange} aria-label={$t('volume')} tabindex="0" />
 					</div>
 				</div>
 				<div class="dd-cont m-hide">
-					<IcoButton title="More" icon="horizontal-dots" clss="allow-space" onpointerdown={selfFocus} />
+					<IcoButton title={$t('more')} icon="horizontal-dots" clss="allow-space" onpointerdown={selfFocus} />
 					<div class="dd-menu dd-pop dd-top-right">
-						<DdButton title="Book info" icon="info" onclick={() => showBookInfo(ab.currentBook)} />
-						<DdButton title="File list" icon="list" onclick={() => showFileList(ab.currentBook)} />
-						<DdButton title="Bookmarks" icon="bookmarks" disabled={!ab.currentBook.bookmarks.length} onclick={() => showBookmarks(ab.currentBook)} />
+						<DdButton title={$t('bookInfo')} icon="info" onclick={() => showBookInfo(ab.currentBook)} />
+						<DdButton title={$t('fileList')} icon="list" onclick={() => showFileList(ab.currentBook)} />
+						<DdButton title={$t('bookmarks')} icon="bookmarks" disabled={!ab.currentBook.bookmarks.length} onclick={() => showBookmarks(ab.currentBook)} />
 					</div>
 				</div>
 			</div>

@@ -8,8 +8,7 @@
 		el = $bindable(),
 		mins,
 		max = 59,
-		nextel,
-		oninput
+		nextel
 	} = $props()
 
 	const id = crypto.randomUUID()
@@ -30,8 +29,6 @@
 					value = `${String(value)[0]}${e.key}`
 				}
 			}
-
-			if (oninput) oninput(e)
 
 			if (nextel && e.target.selectionStart + 1 == maxInputLength) {
 				requestAnimationFrame(() => {
