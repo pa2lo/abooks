@@ -35,7 +35,7 @@
 		</div>
 		<button class="button isFull lineSmall" type="submit">{$t('save')}</button>
 		{#if ab.currentBook.bookmarks.length}
-			<button class="button button-light isFull" onclick={() => showBookmarks(ab.currentBook)}>{$t('showBookmarks')}</button>
+			<button class="button button-light isFull" type="button" onclick={() => showBookmarks(ab.currentBook)}>{$t('showBookmarks')}</button>
 		{/if}
 	</form>
 </Modal>
