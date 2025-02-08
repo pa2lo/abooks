@@ -443,8 +443,8 @@ main {
 	flex-direction: column;
 	gap: 1rem;
 	isolation: isolate;
-	padding: 1rem var(--inlineGap);
-	padding: 1rem var(--inlineGap) calc(env(safe-area-inset-bottom) + 1rem);
+	padding: max(1rem, 3vh) var(--inlineGap);
+	padding: max(1rem, 3vh) var(--inlineGap) calc(env(safe-area-inset-bottom) + max(1rem, 3vh));
 	position: relative;
 	min-height: 100%;
 }
@@ -563,7 +563,7 @@ main {
 	flex: 1;
 }
 .marquee-inner {
-	gap: 2rem;
+	gap: 4rem;
 	min-width: fit-content;
 }
 .marquee.active .marquee-inner {
@@ -574,7 +574,7 @@ main {
 }
 @keyframes marquee {
 	33% {transform: translateX(0);}
-	to {transform: translateX(calc(-50% - 1rem));}
+	to {transform: translateX(calc(-50% - 2rem));}
 }
 
 .book-files-marker, .book-bookmark-marker {
@@ -1116,7 +1116,8 @@ body:has(.modal) {
 		grid-auto-flow: dense;
 		align-items: center;
 		gap: .5rem 1rem;
-		padding-inline: max(var(--inlineGap), 50% - 37.5rem);
+		padding: 1rem max(var(--inlineGap), 50% - 37.5rem);
+		padding: 1rem max(var(--inlineGap), 50% - 37.5rem) calc(env(safe-area-inset-bottom) + 1rem);
 	}
 	.audio-player-thumb-fx-cont {
 		width: max(15rem, 50% - 37.5rem + 15rem - var(--inlineGap));

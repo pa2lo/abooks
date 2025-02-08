@@ -24,12 +24,15 @@
 
 	async function showAppSize() {
 		const est = await navigator.storage.estimate()
-		if (est.usageDetails) {
-			appSize = {
-				filesystem: parseFloat((est.usageDetails.fileSystem / 1024 / 1024).toFixed(1)),
-				db: parseFloat((est.usageDetails.indexedDB / 1024 / 1024).toFixed(1))
-			}
+		appSize = {
+			usage: est.usage ? getMBSize(est.usage) : 0,
+			filesystem: est.usageDetails?.filesystem ? getMBSize(est.usageDetails.fileSystem) : 0,
+			db: est.usageDetails?.indexedDB ? getMBSize(est.usageDetails.indexedDB) : 0
 		}
+	}
+
+	function getMBSize(val) {
+		return parseFloat((val / 1024 / 1024).toFixed(1))
 	}
 
 	const schemeOptions = ['auto', 'dark', 'light']
@@ -141,7 +144,12 @@
 	{/if}
 	{#if appSize}
 		<p class="lineSmall lh125">{$t('appStorageUsed')}</p>
-		<InfoLine title="File system" value={`${appSize.filesystem}MB`} />
-		<InfoLine title="DB" value={`${appSize.db}MB`} />
+		<InfoLine title="Usage" value={`${appSize.usage}MB`} />
+		{#if appSize.filesystem}
+			<InfoLine title="File system" value={`${appSize.filesystem}MB`} />
+		{/if}
+		{#if appSize.db}
+			<InfoLine title="DB" value={`${appSize.db}MB`} />
+		{/if}
 	{/if}
 </Modal>
