@@ -280,7 +280,7 @@ export const labels = {
 		devFiles: "Soubory",
 		colorScheme: "Barevné schéma",
 		rewindTime: "Čas přetáčení",
-		mediaKeys: "Mediální klávesy (předchozí/další)",
+		mediaKeys: "Mediální klávesy («/»)",
 		timeDisplay: "Zobrazení času",
 		appColor: "Barva aplikace",
 		booksStorage: "Úložiště nových knih",

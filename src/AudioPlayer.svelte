@@ -501,7 +501,7 @@
 		offY = 0
 	}
 	function ouTouchStart(e) {
-		if (e.touches.length > 1 || window.visualViewport.scale > 1.01 || playerEl.scrollTop > 0 || window.location.hash != '#player') {
+		if (e.touches.length > 1 || window.visualViewport.scale > 1.01 || playerEl.scrollTop > 0 || window.location.hash != '#player' || e.target?.matches('.audio-setting')) {
 			if (isMoving) removeDomEvents()
 			return
 		}
@@ -657,7 +657,7 @@
 					</div>
 				</div>
 				<div class="dd-cont">
-					<IcoButton title={$t('volume')} icon={getVolumeIcon()} clss="allow-space" active={ab.currentBook.volume != 1} onpointerdown={selfFocus} />
+					<IcoButton title={$t('volume')} icon={getVolumeIcon()} clss="allow-space" active={ab.currentBook.volume != 1} onpointerdown={selfFocus} disabled={isiOS} />
 					<div class="dd-setting dd-pop dd-top-center" style="--complete: {ab.currentBook.volume * 100}%;">
 						<input class="audio-setting" type="range" min="0" max="1" step="0.1" bind:value={ab.currentBook.volume} oninput={onVolumeChange} aria-label={$t('volume')} tabindex="0" />
 					</div>
