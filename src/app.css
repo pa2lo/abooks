@@ -826,6 +826,9 @@ body:has(.modal) {
 .modal.movingDown .modal-inner {
 	transition: none;
 }
+.modal-wide {
+	max-width: 32rem;
+}
 .modal-narrow {
 	max-width: 18rem;
 }
@@ -877,6 +880,8 @@ body:has(.modal) {
 }
 .info-line-data:not(.lighter) {
 	flex-shrink: 1;
+	hyphens: auto;
+	overflow-wrap: anywhere;
 }
 .info-line-divider {
 	height: 0;
@@ -902,6 +907,18 @@ body:has(.modal) {
 }
 .bookmark-x .icon {
 	display: block;
+}
+
+.info-line-move-buttons {
+	margin: -.25rem -.25rem -.25rem -.125rem;
+}
+.info-line-move {
+	padding: .25rem;
+}
+.info-line-outer:first-child .info-line-move:first-child,
+.info-line-outer:last-child .info-line-move:last-child {
+	opacity: 0;
+	pointer-events: none;
 }
 
 .sleep-timer-time {

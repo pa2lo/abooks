@@ -100,7 +100,11 @@ export const labels = {
 		permRequired: "Permission is required to play this audiobook",
 		clFile: "Unable to load file",
 		bmSaved: "Bookmark saved",
-		bmRemoved: "Bookmark removed"
+		bmRemoved: "Bookmark removed",
+		editFileList: "Edit file list",
+		fileNameSource: "Items name source",
+		fileName: "File name",
+		listUpdated: "File list was updated"
 	},
 	sk: {
 		lib: "Knižnica",
@@ -203,7 +207,11 @@ export const labels = {
 		permRequired: "Na prehrávanie tejto audioknihy sa vyžaduje povolenie",
 		clFile: "Nie je možné načítať súbor",
 		bmSaved: "Záložka bola uložená",
-		bmRemoved: "Záložka bola odstránená"
+		bmRemoved: "Záložka bola odstránená",
+		editFileList: "Upraviť zoznam súborov",
+		fileNameSource: "Zdroj názvov položiek",
+		fileName: "Názov súboru",
+		listUpdated: "Zoznam súborov bol aktualizovaný"
 	},
 	cz: {
 		lib: "Knihovna",
@@ -306,6 +314,10 @@ export const labels = {
 		permRequired: "K přehrávání této audioknihy je vyžadováno povolení",
 		clFile: "Nelze načíst soubor",
 		bmSaved: "Záložka byla uložena",
-		bmRemoved: "Záložka byla odstraněna"
+		bmRemoved: "Záložka byla odstraněna",
+		editFileList: "Upravit seznam souborů",
+		fileNameSource: "Zdroj názvů položek",
+		fileName: "Název souboru",
+		listUpdated: "Seznam souborů byl aktualizován"
 	}
 }

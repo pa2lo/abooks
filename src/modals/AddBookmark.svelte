@@ -7,6 +7,7 @@
 
 	import Modal from "../components/Modal.svelte"
 	import TextInput from "../components/TextInput.svelte"
+	import AButton from "../components/AButton.svelte"
 
 	function onFormSubmit(e) {
 		e.preventDefault()
@@ -33,9 +34,9 @@
 			<TextInput label={$t('time')} value={secondsToHMS(newBookmark.data.position)} readonly />
 			<TextInput label={$t('added')} value={formatDate(newBookmark.data.added)} readonly />
 		</div>
-		<button class="button isFull lineSmall" type="submit">{$t('save')}</button>
+		<AButton title={$t('save')} clss="lineSmall" full type="submit" />
 		{#if ab.currentBook.bookmarks.length}
-			<button class="button button-light isFull" type="button" onclick={() => showBookmarks(ab.currentBook)}>{$t('showBookmarks')}</button>
+			<AButton title={$t('showBookmarks')} full light onclick={() => showBookmarks(ab.currentBook)} />
 		{/if}
 	</form>
 </Modal>

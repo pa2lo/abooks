@@ -21,6 +21,7 @@
 	import Icon from './components/Icon.svelte'
 	import IcoButton from './components/IcoButton.svelte'
 	import DdButton from './components/DdButton.svelte'
+	import AButton from './components/AButton.svelte'
 
 	let loading = $state(true)
 
@@ -125,10 +126,7 @@
 	{/if}
 	<IcoButton title={$t('settings')} icon="settings" onclick={settings.show} />
 	{#if library.books.length}
-		<button class="button" class:isLoading={ab.addingBook} onclick={addBook}>
-			<Icon icon="plus" />
-			<span class="button-text">{$t('addBook')}</span>
-		</button>
+		<AButton icon="plus" title={$t('addBook')} loading={ab.addingBook} onclick={addBook} />
 	{/if}
 </header>
 {#if !loading}
@@ -177,10 +175,7 @@
 			<div class="no-books ta-c">
 				<Icon icon="empty" />
 				<h2 class="line lighter">{$t('noBooks')}</h2>
-				<button class="button" class:isLoading={ab.addingBook} onclick={addBook}>
-					<Icon icon="plus" />
-					<span class="button-text">{$t('addBook')}</span>
-				</button>
+				<AButton icon="plus" title={$t('addBook')} loading={ab.addingBook} onclick={addBook} />
 			</div>
 		{/if}
 	</main>
@@ -188,7 +183,7 @@
 <AudioPlayer bind:this={player} on:addBook={addBook} on:bookPlayed={() => abSettings.sort == 'recentlyPlayed' && sortLibrary()} />
 <AppHotkeys bind:this={hotkeys} />
 <BookInfo on:deleteBook={(e) => deleteBookHelper(e.detail)} on:setBook={(e) => player.setBook(e.detail)} />
-<FileList on:seekTo={(e) => player.seekToPosition(e.detail)} />
+<FileList onSeek={player.seekToPosition} />
 <BookmarkList on:seekTo={(e) => player.seekToPosition(e.detail)} />
 <AddBookmark />
 <JumpTo on:seekTo={(e) => player.seekToPosition(e.detail)} />

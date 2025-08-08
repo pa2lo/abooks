@@ -11,7 +11,9 @@
 		active,
 		divided,
 		removable,
-		onclick
+		onclick,
+		onmoveup,
+		onmovedown
 	} = $props()
 </script>
 
@@ -23,7 +25,7 @@
 			<span class="info-line-data" class:lighter={reverse}>{ value }</span>
 		</button>
 	{:else}
-		<div class="info-line flex ai-c" class:isDivided={divided}>
+		<div class="info-line flex ai-c" class:isDivided={divided} class:isActive={active}>
 			<span class="info-line-data" class:lighter={!reverse}>{ title }</span>
 			<span class="info-line-divider"></span>
 			<span class="info-line-data" class:lighter={reverse}>{ value }</span>
@@ -33,5 +35,15 @@
 		<button class="bookmark-x" onclick={removable} title={$t('delBookmark')}>
 			<Icon icon="x" />
 		</button>
+	{/if}
+	{#if onmoveup && onmovedown}
+		<div class="info-line-move-buttons flex">
+			<button class="bookmark-x info-line-move" onclick={onmoveup} title={$t('moveUp')}>
+				<Icon icon="up" />
+			</button>
+			<button class="bookmark-x info-line-move" onclick={onmovedown} title={$t('moveDown')}>
+				<Icon icon="down" />
+			</button>
+		</div>
 	{/if}
 </div>

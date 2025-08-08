@@ -6,6 +6,7 @@
 
 	import Modal from "../components/Modal.svelte"
 	import TimeInput from "../components/TimeInput.svelte"
+	import AButton from "../components/AButton.svelte"
 
 	const dispatch = createEventDispatcher()
 
@@ -51,6 +52,6 @@
 			<TimeInput label={$t('minute')} autofocus mins bind:el={minEl} bind:value={jumpTo.model.m} onblur={checkMaxLength} onenter={onFormSubmit} nextel={secEl} />
 			<TimeInput label={$t('second')} autofocus mins bind:el={secEl} bind:value={jumpTo.model.s} onblur={checkMaxLength} onenter={onFormSubmit} />
 		</div>
-		<button class="button isFull" type="submit">{$t('jumpToTime')}</button>
+		<AButton title={$t('jumpToTime')} type="submit" full />
 	</form>
 </Modal>

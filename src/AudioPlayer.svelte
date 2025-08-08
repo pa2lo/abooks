@@ -124,14 +124,8 @@
 	}
 
 	// file operations
-	async function loadBookFiles() {
-		ab.isLoading = true
+	function setBookMarkers() {
 		bookFilesMarkers = []
-
-		if (ab.currentBook.legacy) {
-			if (!opfs) opfs = await getOPFS()
-			bookDir = await getDir(opfs, ab.currentBook.id)
-		}
 
 		if (ab.currentBook.files.length > 1) bookFilesMarkers = ab.currentBook.files.reduce((acc, f, i) => {
 			if (i == 0) acc.push(f.duration)
@@ -139,6 +133,16 @@
 			else acc.push(acc.at(-1) + f.duration)
 			return acc
 		}, [])
+	}
+	async function loadBookFiles() {
+		ab.isLoading = true
+
+		if (ab.currentBook.legacy) {
+			if (!opfs) opfs = await getOPFS()
+			bookDir = await getDir(opfs, ab.currentBook.id)
+		}
+
+		setBookMarkers()
 
 		ab.isLoading = false
 	}
@@ -276,7 +280,7 @@
 	}
 
 	// playback
-	export async function seekToPosition(absolutePosition) {
+	export async function seekToPosition(absolutePosition, updateMarkers) {
 		const { partIndex, position } = findPartForPosition(absolutePosition)
 
 		if (partIndex !== currentFileIndex || !fileLoaded) {
@@ -287,6 +291,8 @@
 			audioElement.currentTime = position
 			if (audioElement?.paused) await audioElement.play()
 		}
+
+		if (updateMarkers) setBookMarkers()
 	}
 
 	async function skipToNextTrack() {

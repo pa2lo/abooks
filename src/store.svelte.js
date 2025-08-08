@@ -1,5 +1,5 @@
 import { writable, get } from "svelte/store"
-import { saveLSSetting } from "./utils/helpers"
+import { saveLSSetting, removeFileExtension } from "./utils/helpers"
 
 // global
 export const ab = $state({
@@ -60,7 +60,7 @@ export function showFileList(book) {
 
 	for (let i = 0; i < book.files.length; i++) {
 		files.push({
-			title: book.files[i]?.title ? `${i+1}. ${book.files[i].title}` : book.files[i].name,
+			title: book.files[i]?.title ? `${i+1}. ${book.files[i].title}` : removeFileExtension(book.files[i].name),
 			start: accumulated,
 			duration: book.files[i].duration
 		})

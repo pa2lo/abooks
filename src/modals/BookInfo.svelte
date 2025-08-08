@@ -7,6 +7,7 @@
 	import Modal from "../components/Modal.svelte"
 	import InfoLine from "../components/InfoLine.svelte"
 	import Icon from "../components/Icon.svelte"
+	import AButton from "../components/AButton.svelte"
 
 	const dispatch = createEventDispatcher()
 
@@ -80,21 +81,9 @@
 		<InfoLine title={$t('storage')} value={$t(bookInfo.book.legacy ? 'appMem2' : 'devStor')} />
 	</div>
 	<div class="book-modal-buttons line flex ai-c">
-		<button class="button button-light" onclick={() => showFileList(bookInfo.book)}>
-			<Icon icon="list" />
-			<span class="button-text">{$t('files')}</span>
-		</button>
-		<button class="button button-light" disabled={!bookInfo.book.bookmarks.length} onclick={() => showBookmarks(bookInfo.book)}>
-			<Icon icon="bookmarks" />
-			<span class="button-text">{$t('bookmarks')}</span>
-		</button>
-		<button class="button button-light" onclick={deleteBook}>
-			<Icon icon="x" />
-			<span class="button-text">{$t('del')}</span>
-		</button>
-		<button class="button" onclick={setBook}>
-			<Icon icon={bookPlaying ? 'pause' : 'play'} />
-			<span class="button-text">{ $t(bookPlaying ? 'pause' : 'play') }</span>
-		</button>
+		<AButton icon="list" title={$t('files')} light onclick={() => showFileList(bookInfo.book)} />
+		<AButton icon="bookmarks" title={$t('bookmarks')} light disabled={!bookInfo.book.bookmarks.length} onclick={() => showBookmarks(bookInfo.book)} />
+		<AButton icon="x" title={$t('del')} light onclick={deleteBook} />
+		<AButton icon={bookPlaying ? 'pause' : 'play'} title={ $t(bookPlaying ? 'pause' : 'play') } onclick={setBook} />
 	</div>
 </Modal>

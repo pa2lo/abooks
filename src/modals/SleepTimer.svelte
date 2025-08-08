@@ -6,6 +6,7 @@
 
 	import Modal from "../components/Modal.svelte"
 	import TimeInput from "../components/TimeInput.svelte"
+	import AButton from "../components/AButton.svelte"
 
 	const dispatch = createEventDispatcher()
 
@@ -81,7 +82,7 @@
 			<div class="flex lineSmaller" style="--complete: {(timeRange.value - 5) / 115 * 100}%">
 				<input class="input-range" type="range" min=5 step=1 max=120 bind:value={timeRange.value} onkeydown={handleModalKeyDown} />
 			</div>
-			<button class="button isFull" onclick={startSleep}>{$t('start2')}</button>
+			<AButton title={$t('start2')} full onclick={startSleep} />
 		{:else}
 			<p class="lineSmall lh125">{$t('timerNote2')}</p>
 			<div class="sleep-timer-time lineSmall">
@@ -90,7 +91,7 @@
 			<div class="flex lineSmaller">
 				<progress class="sleep-progress" max=100 value={(remaining / 60) / timeRange.value * 100}></progress>
 			</div>
-			<button class="button button-light isFull" onclick={stopSleep}>{$t('cancel')}</button>
+			<AButton title={$t('cancel')} light full onclick={stopSleep} />
 		{/if}
 	</div>
 </Modal>

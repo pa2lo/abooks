@@ -87,6 +87,13 @@
 		})
 	}
 
+	export function scrollToTop() {
+		modalEl.scrollTo({
+			top: 0,
+			behavior: "smooth"
+		})
+	}
+
 	onDestroy(() => {
 		if (isMoving) removeDomEvents()
 	})

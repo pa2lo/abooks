@@ -367,14 +367,15 @@ export async function updateBook(book, param, val) {
 	await ab.db?.updateBook($state.snapshot(book))
 }
 
-export async function updatePosition(absolutePosition, fileIndex, filePosition) {
-	positions.books[ab.currentBook.id] = {
-		id: ab.currentBook.id,
+export async function updatePosition(absolutePosition, fileIndex, filePosition, bookId = null) {
+	if (!bookId) bookId = ab.currentBook.id
+	positions.books[bookId] = {
+		id: bookId,
 		absolutePosition,
 		fileIndex,
 		filePosition
 	}
-	await ab.db?.updatePosition($state.snapshot(positions.books[ab.currentBook.id]))
+	await ab.db?.updatePosition($state.snapshot(positions.books[bookId]))
 }
 
 window.abShowAllFiles = async function() {
