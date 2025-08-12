@@ -12,7 +12,7 @@
 
 	const dispatch = createEventDispatcher()
 
-	let appSize = $state()
+	let appSize = $state(null)
 
 	let appScheme = $state(localStorage.getItem('scheme') || 'auto')
 	let appColor = $state(localStorage.getItem('color') || 'color1')
@@ -23,11 +23,13 @@
 	}
 
 	async function showAppSize() {
-		const est = await navigator.storage.estimate()
-		appSize = {
-			usage: est.usage ? getMBSize(est.usage) : 0,
-			filesystem: est.usageDetails?.filesystem ? getMBSize(est.usageDetails.fileSystem) : 0,
-			db: est.usageDetails?.indexedDB ? getMBSize(est.usageDetails.indexedDB) : 0
+		if (navigator.storage?.estimate) {
+			const est = await navigator.storage.estimate()
+			appSize = {
+				usage: est.usage ? getMBSize(est.usage) : 0,
+				filesystem: est.usageDetails?.filesystem ? getMBSize(est.usageDetails.fileSystem) : 0,
+				db: est.usageDetails?.indexedDB ? getMBSize(est.usageDetails.indexedDB) : 0
+			}
 		}
 	}
 

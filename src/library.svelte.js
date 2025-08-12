@@ -80,7 +80,7 @@ async function processAddBook(files, legacy, dirName, dirHandle) {
 	const sortedFiles = sortAudioFiles(files, legacy)
 
 	const firstFile = legacy ? sortedFiles[0] : sortedFiles[0].file
-	const baseMetadata = await extractMetadata(firstFile)
+	const baseMetadata = await extractMetadata(firstFile, legacy)
 
 	if (legacy) await getDir(await getOPFS(), bookId, true)
 
@@ -143,7 +143,7 @@ async function processAddBook(files, legacy, dirName, dirHandle) {
 	let totalSize = 0
 
 	for (const [index, file] of sortedFiles.entries()) {
-		let currentMetadata = await extractMetadata(legacy ? file : file.file)
+		let currentMetadata = await extractMetadata(legacy ? file : file.file, legacy)
 
 		totalDuration += currentMetadata.duration || 0
 		if (legacy) totalSize += file.size
@@ -166,12 +166,14 @@ async function processAddBook(files, legacy, dirName, dirHandle) {
 
 	// check available space - 50MB after upload
 	if (legacy) {
-		const storageEstimate = await navigator.storage.estimate()
-		const availableSpace = storageEstimate.quota > storageEstimate.usage ? storageEstimate.quota - storageEstimate.usage : 0
+		if (navigator.storage?.estimate) {
+			const storageEstimate = await navigator.storage.estimate()
+			const availableSpace = storageEstimate.quota > storageEstimate.usage ? storageEstimate.quota - storageEstimate.usage : 0
 
-		if (totalSize + 50000000 > availableSpace) {
-			ab.addingBook = false
-			return showToast(labels[getLang()].noSpace, 'warning')
+			if (totalSize + 50000000 > availableSpace) {
+				ab.addingBook = false
+				return showToast(labels[getLang()].noSpace, 'warning')
+			}
 		}
 
 		try {
@@ -300,10 +302,14 @@ export function sortAudioFiles(files, legacy) {
 	})
 }
 
-export async function extractMetadata(file) {
+export async function extractMetadata(file, legacy) {
 	try {
 		// const metadata = await mm.parseBlob(file)
-		const metadata = file?.bytes ? await mm.parseBuffer(await file.bytes(), { mimeType: file.type }) : await mm.parseBlob(file)
+		let metadata = null
+		if (file?.bytes) metadata = await mm.parseBuffer(await file.bytes(), { mimeType: file.type })
+		else if (file?.arrayBuffer && legacy) metadata = await mm.parseBuffer(new Uint8Array(await file.arrayBuffer()), { mimeType: file.type })
+		else metadata = await mm.parseBlob(file)
+		// const metadata = file?.bytes ? await mm.parseBuffer(await file.bytes(), { mimeType: file.type }) : await mm.parseBlob(file)
 
 		let cover = null
 

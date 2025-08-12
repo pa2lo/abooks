@@ -23,7 +23,12 @@ export function selfFocus(e) {
 	const activeEl = document.activeElement
 	if (activeEl == focusTarget) focusTarget.blur()
 	else if (cont.contains(activeEl)) activeEl.blur()
-	else focusTarget.focus()
+	else {
+		if (cont?.matches('.dd-pop')) {
+			if (!cont.hasAttribute('tabindex')) cont.setAttribute('tabindex', '-1')
+			cont.focus()
+		} else focusTarget.focus()
+	}
 }
 
 export function removeFileExtension(name) {
