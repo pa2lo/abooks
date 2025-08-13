@@ -99,7 +99,7 @@ export async function saveFile(bookId, id, file) {
 	return new Promise((resolve, reject) => {
 		const worker = new Worker('fsworker.js')
 		worker.onmessage = (e) => {
-			console.log(e)
+			console.log(`Saved file ${id}`)
 			worker.terminate()
 			resolve(true)
 		}

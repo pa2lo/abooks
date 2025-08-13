@@ -79,6 +79,12 @@ async function processAddBook(files, legacy, dirName, dirHandle) {
 
 	const sortedFiles = sortAudioFiles(files, legacy)
 
+	if (legacy) {
+		await Promise.all(sortedFiles.map(async file => {
+			file.arrBuffer = await file.arrayBuffer()
+		}))
+	}
+
 	const firstFile = legacy ? sortedFiles[0] : sortedFiles[0].file
 	const baseMetadata = await extractMetadata(firstFile, legacy)
 
@@ -109,11 +115,6 @@ async function processAddBook(files, legacy, dirName, dirHandle) {
 		completed: null,
 		duration: 0,
 		dirHandle: dirHandle,
-		// absolutePosition: 0,
-		// currentPosition: {
-		// 	fileIndex: 0,
-		// 	position: 0
-		// },
 		metadata: {
 			artist: baseMetadata.albumartist || '',
 			author: baseMetadata.artist || '',
@@ -164,8 +165,8 @@ async function processAddBook(files, legacy, dirName, dirHandle) {
 
 	book.duration = totalDuration
 
-	// check available space - 50MB after upload
 	if (legacy) {
+		// check available space - 50MB after upload
 		if (navigator.storage?.estimate) {
 			const storageEstimate = await navigator.storage.estimate()
 			const availableSpace = storageEstimate.quota > storageEstimate.usage ? storageEstimate.quota - storageEstimate.usage : 0
@@ -179,7 +180,7 @@ async function processAddBook(files, legacy, dirName, dirHandle) {
 		try {
 			await Promise.all(sortedFiles.map(async (file) => {
 				let fileName = legacy ? file.name : file.file.name
-				let fileContent = await file.arrayBuffer()
+				let fileContent = file?.arrBuffer ? file.arrBuffer : await file.arrayBuffer()
 				return saveFile(bookId, fileName, fileContent)
 			}))
 		} catch (error) {
@@ -227,20 +228,18 @@ export async function addBook() {
 
 				await processAddBook(files, true, bookName)
 			}
-			input.oncancel = () => {
-				ab.addingBook = false
-			}
-			input.onabort = () => {
-				if (ab.addingBook) ab.addingBook = false
-			}
+			['oncancel', 'onabort', 'oninvalid'].map(ev => {
+				input[ev] = () => ab.addingBook = false
+			})
 
 			input.click()
 		}
 	} catch (error) {
-		console.error('Error adding book:', error)
-		showToast(labels[getLang()].addError, 'warning')
+		if (error.name != 'AbortError') {
+			showToast(labels[getLang()].addError, 'warning')
+			console.error('Error adding book:', error)
+		}
 		ab.addingBook = false
-		throw error
 	}
 }
 
@@ -306,9 +305,16 @@ export async function extractMetadata(file, legacy) {
 	try {
 		// const metadata = await mm.parseBlob(file)
 		let metadata = null
-		if (file?.bytes) metadata = await mm.parseBuffer(await file.bytes(), { mimeType: file.type })
-		else if (file?.arrayBuffer && legacy) metadata = await mm.parseBuffer(new Uint8Array(await file.arrayBuffer()), { mimeType: file.type })
-		else metadata = await mm.parseBlob(file)
+		if (file?.arrBuffer) {
+			console.log(`metadata - ${file.name} - arrayBuffer`)
+			metadata = await mm.parseBuffer(new Uint8Array(file.arrBuffer), { mimeType: file.type })
+		} else if (file?.bytes) {
+			console.log(`metadata - ${file.name} - file bytes`)
+			metadata = await mm.parseBuffer(await file.bytes(), { mimeType: file.type })
+		} else {
+			console.log(`metadata - ${file.name} - parseBlob`)
+			metadata = await mm.parseBlob(file)
+		}
 		// const metadata = file?.bytes ? await mm.parseBuffer(await file.bytes(), { mimeType: file.type }) : await mm.parseBlob(file)
 
 		let cover = null
