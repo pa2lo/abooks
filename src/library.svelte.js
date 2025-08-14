@@ -68,14 +68,16 @@ async function checkStoragePersistance() {
 }
 
 async function processAddBook(files, legacy, dirName, dirHandle) {
-	const bookId = crypto.randomUUID()
-
-	console.log(`adding book from dir ${dirName} with ${files.length} files`)
-
 	if (!files.length) {
 		ab.addingBook = false
 		return alert(labels[getLang()].noFiles)
 	}
+
+	const bookId = crypto.randomUUID()
+
+	if (!dirName) dirName = window.prompt('Unable to find book name. Set the book name in case app cant read title from metadata. What is the name of the book?')
+
+	console.log(`adding book from dir ${dirName} with ${files.length} files`)
 
 	const sortedFiles = sortAudioFiles(files, legacy)
 
@@ -205,8 +207,6 @@ export async function addBook() {
 	if (ab.addingBook == true) return
 	ab.addingBook = true
 	try {
-		const bookId = crypto.randomUUID()
-
 		if ('showDirectoryPicker' in window && abSettings.fsMode == 'fsapi') {
 			const handle = await window.showDirectoryPicker({
 				mode: 'read',
@@ -219,20 +219,32 @@ export async function addBook() {
 		} else {
 			const input = document.createElement('input')
         	input.type = 'file'
+			input.value = ''
 			input.multiple = true
         	input.webkitdirectory = true
 
-			input.onchange = async (e) => {
-				const files = Array.from(e.target.files).filter(file => supportedFormats.includes(file.type))
-				let bookName = files[0]?.webkitRelativePath.split('/')[0] || window.prompt('Unable to find book name. Set the book name in case app cant read title from metadata. What is the name of the book?')
+			let changed = false
+			let timeout = null
 
-				await processAddBook(files, true, bookName)
+			input.onchange = async (e) => {
+				ab.addingBook = true
+				changed = true
+
+				const files = Array.from(e.target.files).filter(file => supportedFormats.includes(file.type))
+
+				await processAddBook(files, true, files[0]?.webkitRelativePath.split('/')[0] || null)
 			}
 			['oncancel', 'onabort', 'oninvalid'].map(ev => {
-				input[ev] = () => ab.addingBook = false
+				input[ev] = () => {
+					clearTimeout(timeout)
+					ab.addingBook = false
+				}
 			})
 
 			input.click()
+			timeout = setTimeout(() => {
+				if (!changed) ab.addingBook = false
+			}, 5000)
 		}
 	} catch (error) {
 		if (error.name != 'AbortError') {

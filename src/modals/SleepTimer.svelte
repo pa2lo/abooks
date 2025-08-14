@@ -16,6 +16,7 @@
 	})
 	let remaining = $state(null)
 	let interval
+	let timeout
 
 	function startSleep() {
 		remaining = timeRange.value * 60
@@ -24,17 +25,21 @@
 				remaining -= 1
 				if (remaining == 30 && !sleepTimer.active) sleepTimer.active = true
 			} else {
-				sleepTimer.isActive = false
 				if (ab.isPlaying) dispatch('finished')
+				stopSleep()
 				if (sleepTimer.active) sleepTimer.active = false
-				clearInterval(interval)
 			}
 		}, 1000)
+		timeout = setTimeout(() => {
+			if (ab.isPlaying) dispatch('finished')
+			stopSleep()
+		}, timeRange.value * 60 * 1000)
 		sleepTimer.isActive = true
 	}
 
 	function stopSleep() {
 		clearInterval(interval)
+		clearTimeout(timeout)
 		sleepTimer.isActive = false
 	}
 
