@@ -8,6 +8,11 @@
 	import SettingField from "../components/SettingField.svelte"
 	import InfoLine from "../components/InfoLine.svelte"
 
+	const buildTime = __BUILD_TIMESTAMP__;
+	function getBuildDate() {
+		return new Date(buildTime).toLocaleString('de')
+	}
+
 	let settingsModal = $state(false)
 
 	const dispatch = createEventDispatcher()
@@ -154,4 +159,5 @@
 			<InfoLine title="DB" value={`${appSize.db}MB`} />
 		{/if}
 	{/if}
+	<InfoLine divided title="Build" value={getBuildDate()} />
 </Modal>

@@ -8,6 +8,13 @@ export default defineConfig({
 		svelte(),
 		{
 			name: 'timestamp-replacement',
+			transform(code, id) {
+				if (id.endsWith('AppSettings.svelte')) {
+					const timestamp = Date.now();
+					return code.replace('__BUILD_TIMESTAMP__', JSON.stringify(timestamp));
+				}
+				return code
+			},
 			generateBundle() {
 				const timestamp = Date.now();
 				const swContent = fs.readFileSync('./dist/service-worker.js', 'utf-8');
