@@ -70,13 +70,9 @@
 		let metadataObject = {
 			artist: ab.currentBook.metadata?.author,
 			album: ab.currentBook.metadata?.album,
-			title: currentFile?.title || removeFileExtension(currentFile?.name)
+			title: currentFile?.title || removeFileExtension(currentFile?.name),
+			artwork: [{	src: ab.currentBook.metadata.cover ?? '/icon512.png' }]
 		}
-		if (ab.currentBook.metadata.cover) metadataObject.artwork = [
-			{
-				src: ab.currentBook.metadata.cover
-			}
-		]
 		if ("mediaSession" in navigator) {
 			navigator.mediaSession.metadata = new MediaMetadata(metadataObject)
 		}

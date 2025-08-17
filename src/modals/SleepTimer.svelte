@@ -1,5 +1,5 @@
 <script>
-	import { createEventDispatcher } from "svelte"
+	import { createEventDispatcher, onDestroy } from "svelte"
 	import { ab, sleepTimer } from "../store.svelte"
 	import { secondsToHMS, formatDate } from "../utils/helpers"
 	import { t } from "../utils/translation.svelte"
@@ -15,38 +15,58 @@
 		hours: 0
 	})
 	let remaining = $state(null)
-	let interval
-	let timeout
+	let interval = null
+	let timeout = null
+	let startTs = null
+	let duration = null
+	let notifyTimeout = null
 
 	function startSleep() {
-		remaining = timeRange.value * 60
-		interval = setInterval(() => {
-			if (remaining > 1) {
-				remaining -= 1
-				if (remaining == 30 && !sleepTimer.active) sleepTimer.active = true
-			} else {
-				if (ab.isPlaying) dispatch('finished')
-				stopSleep()
-				if (sleepTimer.active) sleepTimer.active = false
-			}
-		}, 1000)
+		duration = totalMinutes * 60
+		startTs = Date.now()
+
+		notifyTimeout = setTimeout(() => {
+			if (!sleepTimer.active && !document.hidden) sleepTimer.active = true
+			notifyTimeout = null
+		}, (duration - 30) * 1000)
+
 		timeout = setTimeout(() => {
 			if (ab.isPlaying) dispatch('finished')
 			stopSleep()
-		}, timeRange.value * 60 * 1000)
+		}, duration * 1000)
+
 		sleepTimer.isActive = true
 	}
 
 	function stopSleep() {
-		clearInterval(interval)
+		if (interval) clearInterval(interval)
+		if (notifyTimeout) clearTimeout(notifyTimeout)
 		clearTimeout(timeout)
 		sleepTimer.isActive = false
 	}
 
+	function setRemaining() {
+		const elapsed = Math.floor((Date.now() - startTs) / 1000)
+		remaining = Math.max(duration - elapsed, 0)
+	}
+
+	$effect(() => {
+		if (sleepTimer.isActive && sleepTimer.active) {
+			setRemaining()
+			interval = setInterval(setRemaining, 1000)
+		} else {
+			if (interval) {
+				clearInterval(interval)
+				interval = null
+			}
+		}
+	})
+
+	onDestroy(stopSleep)
+
 	function handleModalKeyup(e) {
 		if (e.key == 'Enter') {
-			if (sleepTimer.isActive) stopSleep()
-			else startSleep()
+			sleepTimer.isActive ? stopSleep() : startSleep()
 		}
 	}
 	function handleModalKeyDown(e) {
@@ -54,8 +74,8 @@
 			e.preventDefault()
 			e.stopPropagation()
 
-			if (e.code == 'ArrowLeft') timeRange.value = Math.max(timeRange.value - 5, 5)
-			if (e.code == 'ArrowRight') timeRange.value = Math.min(timeRange.value + 5, 120)
+			if (e.code == 'ArrowLeft') setTotalMinutes(Math.max(totalMinutes - 5, 5))
+			if (e.code == 'ArrowRight') setTotalMinutes(Math.min(totalMinutes + 5, 120))
 		}
 	}
 
@@ -64,14 +84,10 @@
 		else if (timeModel.hours == 0 && timeModel.mins < 5) timeModel.mins = '05'
 	}
 
-	let timeRange = {
-		get value() {
-			return Math.min(120, Math.max(5, parseInt(timeModel.hours || 0) * 60 + parseInt(timeModel.mins || 0)))
-		},
-		set value(v) {
-			timeModel.hours = Math.floor(v / 60)
-			timeModel.mins = (v % 60).toString().padStart(2, '0')
-		}
+	const totalMinutes = $derived(Math.min(120, Math.max(5, parseInt(timeModel.hours || 0) * 60 + parseInt(timeModel.mins || 0))))
+	function setTotalMinutes(v) {
+		timeModel.hours = Math.floor(v / 60)
+		timeModel.mins = (v % 60).toString().padStart(2, '0')
 	}
 </script>
 
@@ -84,8 +100,8 @@
 				<TimeInput bind:value={timeModel.hours} max=2 onblur={onTimeBlur} />
 				<TimeInput bind:value={timeModel.mins} mins onblur={onTimeBlur} />
 			</div>
-			<div class="flex lineSmaller" style="--complete: {(timeRange.value - 5) / 115 * 100}%">
-				<input class="input-range" type="range" min=5 step=1 max=120 bind:value={timeRange.value} onkeydown={handleModalKeyDown} />
+			<div class="flex lineSmaller" style="--complete: {(totalMinutes - 5) / 115 * 100}%">
+				<input class="input-range" type="range" min=5 step=1 max=120 value={totalMinutes} oninput={e => setTotalMinutes(+e.target.value)} onkeydown={handleModalKeyDown} />
 			</div>
 			<AButton title={$t('start2')} full onclick={startSleep} />
 		{:else}
@@ -94,7 +110,7 @@
 				{ secondsToHMS(remaining) }
 			</div>
 			<div class="flex lineSmaller">
-				<progress class="sleep-progress" max=100 value={(remaining / 60) / timeRange.value * 100}></progress>
+				<progress class="sleep-progress" max=100 value={(remaining / 60) / totalMinutes * 100}></progress>
 			</div>
 			<AButton title={$t('cancel')} light full onclick={stopSleep} />
 		{/if}
